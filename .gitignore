@@ -1,0 +1,19 @@
+# Secrets - never commit real credentials
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+venv/
+.venv/
+
+# Editor/OS noise
+.DS_Store
+.vscode/
+.idea/
+#project explain file
+project-structure.txt
+explainCode.txt
+DEPLOYMENT_CHECKLIST.md

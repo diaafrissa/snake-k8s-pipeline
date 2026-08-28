@@ -1,0 +1,14 @@
+# PersistentVolumeClaim for Redis data.
+# Uses our own "snake-local-path" StorageClass (see storageclass.yaml)
+# instead of relying on the cluster's default one.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: snake-local-path
+  resources:
+    requests:
+      storage: 1Gi

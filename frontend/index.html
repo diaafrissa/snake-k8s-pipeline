@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PHOSPHOR :: Snake Arcade</title>
+<style>
+  @font-face {
+    font-family: 'Press Start 2P';
+    src: local('Press Start 2P');
+  }
+
+  :root {
+    --bg-deep: #050806;
+    --cabinet: #17130f;
+    --cabinet-edge: #2b241a;
+    --screen-bg: #081912;
+    --phosphor: #4dff8c;
+    --phosphor-bright: #a6ffce;
+    --phosphor-dim: #163d27;
+    --amber: #ffb000;
+    --amber-dim: #7a5400;
+    --danger: #ff4d4d;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg-deep);
+    background-image:
+      radial-gradient(circle at 50% 0%, #0d1410 0%, var(--bg-deep) 60%);
+    font-family: 'VT323', 'Courier New', monospace;
+    color: var(--phosphor);
+    overflow: hidden;
+    -webkit-font-smoothing: none;
+  }
+
+  #app {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .cabinet {
+    background: linear-gradient(180deg, var(--cabinet) 0%, #0f0c09 100%);
+    border: 2px solid var(--cabinet-edge);
+    border-radius: 18px;
+    padding: 22px 22px 26px;
+    box-shadow:
+      0 0 0 1px #000 inset,
+      0 20px 60px rgba(0,0,0,0.7),
+      0 0 40px rgba(77,255,140,0.05);
+    max-width: 480px;
+    width: 100%;
+  }
+
+  .marquee {
+    text-align: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 15px;
+    letter-spacing: 3px;
+    color: var(--amber);
+    text-shadow: 0 0 6px var(--amber), 0 0 18px var(--amber-dim);
+    margin: 4px 0 14px;
+    animation: marqueeFlicker 5s infinite;
+  }
+
+  .marquee small {
+    display: block;
+    font-size: 8px;
+    color: var(--phosphor);
+    text-shadow: 0 0 6px var(--phosphor);
+    letter-spacing: 2px;
+    margin-top: 8px;
+    opacity: 0.85;
+  }
+
+  @keyframes marqueeFlicker {
+    0%, 96%, 100% { opacity: 1; }
+    97% { opacity: 0.82; }
+    98% { opacity: 1; }
+    99% { opacity: 0.9; }
+  }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--phosphor);
+    padding: 0 4px 10px;
+    letter-spacing: 1px;
+  }
+
+  .hud .label { color: var(--phosphor-dim); font-size: 8px; display: block; margin-bottom: 6px; }
+  .hud .value { color: var(--phosphor-bright); text-shadow: 0 0 8px var(--phosphor); font-size: 14px; }
+  .hud .value.amber { color: var(--amber); text-shadow: 0 0 8px var(--amber); }
+  .hud .col { text-align: left; }
+  .hud .col.right { text-align: right; }
+
+  .screen-frame {
+    position: relative;
+    border-radius: 6px;
+    padding: 3px;
+    background: #000;
+    box-shadow: 0 0 0 1px #000, inset 0 0 20px rgba(0,0,0,0.9);
+  }
+
+  .screen {
+    position: relative;
+    background: var(--screen-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+  }
+
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 1px,
+      rgba(0,0,0,0.22) 2px,
+      rgba(0,0,0,0) 3px
+    );
+    mix-blend-mode: multiply;
+    animation: scanShift 6s linear infinite;
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    box-shadow: inset 0 0 70px 18px rgba(0,0,0,0.75);
+  }
+
+  @keyframes scanShift {
+    0% { background-position-y: 0px; }
+    100% { background-position-y: 60px; }
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: rgba(4, 12, 8, 0.82);
+    text-align: center;
+    padding: 20px;
+    font-family: 'Press Start 2P', monospace;
+  }
+
+  .overlay.hidden { display: none; }
+
+  .overlay h2 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--phosphor-bright);
+    text-shadow: 0 0 10px var(--phosphor);
+    letter-spacing: 2px;
+  }
+
+  .overlay h2.danger { color: var(--danger); text-shadow: 0 0 10px var(--danger); }
+
+  .overlay p {
+    margin: 0;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    color: var(--phosphor);
+    line-height: 1.6;
+  }
+
+  .blink { animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    background: transparent;
+    color: var(--amber);
+    border: 2px solid var(--amber);
+    padding: 10px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-shadow: 0 0 6px var(--amber);
+    box-shadow: 0 0 12px rgba(255,176,0,0.15);
+    transition: transform 0.08s ease, background 0.15s ease;
+  }
+
+  .btn:active { transform: scale(0.95); background: rgba(255,176,0,0.12); }
+
+  .footer-hint {
+    text-align: center;
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--phosphor-dim);
+    letter-spacing: 1px;
+  }
+
+  .name-input {
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    letter-spacing: 2px;
+    background: #06120c;
+    border: 2px solid var(--phosphor-dim);
+    color: var(--phosphor-bright);
+    text-shadow: 0 0 6px var(--phosphor);
+    text-align: center;
+    text-transform: uppercase;
+    padding: 8px 10px;
+    width: 200px;
+    border-radius: 4px;
+    outline: none;
+  }
+
+  .name-input:focus { border-color: var(--phosphor); }
+
+  .leaderboard {
+    width: 100%;
+    max-width: 240px;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+  }
+
+  .leaderboard .lb-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--amber);
+    text-shadow: 0 0 6px var(--amber);
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .leaderboard ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    text-align: left;
+  }
+
+  .leaderboard li {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 6px;
+    color: var(--phosphor);
+    border-bottom: 1px dashed rgba(77,255,140,0.12);
+  }
+
+  .leaderboard li .rank { color: var(--phosphor-dim); width: 26px; }
+  .leaderboard li .name { flex: 1; text-align: left; }
+  .leaderboard li .pts { color: var(--phosphor-bright); }
+
+  .leaderboard .lb-empty,
+  .leaderboard .lb-error {
+    color: var(--phosphor-dim);
+    font-size: 14px;
+  }
+
+  .dev-credit {
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #ffffff;
+    font-weight: bold;
+    text-shadow: 0 0 6px rgba(255,255,255,0.8), 0 0 2px #000;
+    opacity: 0.95;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .dpad {
+    display: none;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(3, 52px);
+    gap: 6px;
+    justify-content: center;
+    margin-top: 18px;
+  }
+
+  .dpad button {
+    background: linear-gradient(180deg, #1c1712, #100d0a);
+    border: 1px solid var(--cabinet-edge);
+    color: var(--phosphor);
+    font-size: 18px;
+    border-radius: 8px;
+    box-shadow: 0 3px 0 #000, inset 0 0 6px rgba(77,255,140,0.08);
+  }
+
+  .dpad button:active { transform: translateY(2px); box-shadow: 0 1px 0 #000; }
+
+  .dpad .up { grid-column: 2; grid-row: 1; }
+  .dpad .left { grid-column: 1; grid-row: 2; }
+  .dpad .right { grid-column: 3; grid-row: 2; }
+  .dpad .down { grid-column: 2; grid-row: 3; }
+
+  @media (max-width: 520px), (hover: none) {
+    .dpad { display: grid; }
+    .marquee { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="cabinet">
+    <div class="marquee">
+      PHOSPHOR
+      <small>:: A SNAKE ARCADE CARTRIDGE ::</small>
+    </div>
+
+    <div class="hud">
+      <div class="col">
+        <span class="label">SCORE</span>
+        <span class="value amber" id="score">000</span>
+      </div>
+      <div class="col right">
+        <span class="label">HIGH SCORE</span>
+        <span class="value" id="highScore">000</span>
+      </div>
+    </div>
+
+    <div class="screen-frame">
+      <div class="screen" id="screen">
+        <canvas id="game"></canvas>
+        <div class="scanlines"></div>
+        <div class="vignette"></div>
+        <div class="dev-credit">Eng.Diaa FR</div>
+
+        <div class="overlay" id="overlayStart">
+          <h2>PHOSPHOR</h2>
+          <input class="name-input" id="playerName" maxlength="20" placeholder="YOUR NAME" autocomplete="off">
+          <p style="font-size:16px;">PRESS SPACE OR TAP<br><span class="blink">TO START</span></p>
+          <div class="leaderboard" id="leaderboardStart">
+            <div class="lb-title">TOP SCORES</div>
+            <div class="lb-empty">LOADING...</div>
+          </div>
+        </div>
+
+        <div class="overlay hidden" id="overlayGameOver">
+          <h2 class="danger">GAME OVER</h2>
+          <p id="finalScoreLine">SCORE: 000</p>
+          <p id="scoreSaveStatus" style="font-size:14px; color:var(--phosphor-dim);"></p>
+          <button class="btn" id="retryBtn">RETRY</button>
+          <div class="leaderboard" id="leaderboardGameOver">
+            <div class="lb-title">TOP SCORES</div>
+            <div class="lb-empty">LOADING...</div>
+          </div>
+        </div>
+
+        <div class="overlay hidden" id="overlayPause">
+          <h2>PAUSED</h2>
+          <p>PRESS P<br>TO RESUME</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="dpad" id="dpad">
+      <button class="up" data-dir="up">▲</button>
+      <button class="left" data-dir="left">◀</button>
+      <button class="right" data-dir="right">▶</button>
+      <button class="down" data-dir="down">▼</button>
+    </div>
+
+    <div class="footer-hint">ARROWS / WASD TO MOVE &nbsp;·&nbsp; P TO PAUSE</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Config ----------
+  const GRID_SIZE = 20;
+  const BASE_SPEED_MS = 180;
+  const MIN_SPEED_MS = 100;
+  const SPEED_STEP_MS = 3;
+
+  // Relative path: nginx proxies /api/* to the game-api service,
+  // so this works unchanged in dev, docker-compose, and Kubernetes.
+  const API_BASE = '/api';
+  const DEFAULT_PLAYER_NAME = 'PLAYER';
+
+  // ---------- State ----------
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const screenEl = document.getElementById('screen');
+
+  const scoreEl = document.getElementById('score');
+  const highScoreEl = document.getElementById('highScore');
+  const overlayStart = document.getElementById('overlayStart');
+  const overlayGameOver = document.getElementById('overlayGameOver');
+  const overlayPause = document.getElementById('overlayPause');
+  const finalScoreLine = document.getElementById('finalScoreLine');
+  const retryBtn = document.getElementById('retryBtn');
+  const dpad = document.getElementById('dpad');
+  const playerNameInput = document.getElementById('playerName');
+  const scoreSaveStatus = document.getElementById('scoreSaveStatus');
+  const leaderboardStart = document.getElementById('leaderboardStart');
+  const leaderboardGameOver = document.getElementById('leaderboardGameOver');
+
+  let cellPx = 0;
+  let snake = [];
+  let direction = { x: 1, y: 0 };
+  let nextDirection = { x: 1, y: 0 };
+  let food = null;
+  let score = 0;
+  let highScore = 0; // in-memory only for this session
+  let speedMs = BASE_SPEED_MS;
+  let loopHandle = null;
+  let state = 'idle'; // idle | running | paused | over
+  let trail = []; // for phosphor afterglow effect
+
+  function pad3(n) {
+    return String(n).padStart(3, '0');
+  }
+
+  // ---------- Canvas sizing (crisp on HiDPI) ----------
+  function resizeCanvas() {
+    const rect = screenEl.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cellPx = rect.width / GRID_SIZE;
+    draw(); // redraw immediately on resize
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  // ---------- Game setup ----------
+  function resetGame() {
+    const mid = Math.floor(GRID_SIZE / 2);
+    snake = [
+      { x: mid - 1, y: mid },
+      { x: mid - 2, y: mid },
+      { x: mid - 3, y: mid }
+    ];
+    direction = { x: 1, y: 0 };
+    nextDirection = { x: 1, y: 0 };
+    score = 0;
+    speedMs = BASE_SPEED_MS;
+    trail = [];
+    placeFood();
+    updateScoreUI();
+  }
+
+  function placeFood() {
+    let candidate;
+    do {
+      candidate = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE)
+      };
+    } while (snake.some(s => s.x === candidate.x && s.y === candidate.y));
+    food = candidate;
+  }
+
+  function updateScoreUI() {
+    scoreEl.textContent = pad3(score);
+    highScoreEl.textContent = pad3(highScore);
+  }
+
+  // ---------- Game loop ----------
+  function startLoop() {
+    stopLoop();
+    loopHandle = setInterval(tick, speedMs);
+  }
+
+  function stopLoop() {
+    if (loopHandle) {
+      clearInterval(loopHandle);
+      loopHandle = null;
+    }
+  }
+
+  function tick() {
+    direction = nextDirection;
+    const head = snake[0];
+    const newHead = { x: head.x + direction.x, y: head.y + direction.y };
+
+    // wall collision
+    if (newHead.x < 0 || newHead.x >= GRID_SIZE || newHead.y < 0 || newHead.y >= GRID_SIZE) {
+      return gameOver();
+    }
+    // self collision
+    if (snake.some(s => s.x === newHead.x && s.y === newHead.y)) {
+      return gameOver();
+    }
+
+    snake.unshift(newHead);
+
+    if (newHead.x === food.x && newHead.y === food.y) {
+      score += 10;
+      updateScoreUI();
+      placeFood();
+      speedMs = Math.max(MIN_SPEED_MS, speedMs - SPEED_STEP_MS);
+      startLoop(); // restart with new speed
+    } else {
+      const tail = snake.pop();
+      trail.push({ ...tail, life: 1 });
+    }
+
+    draw();
+  }
+
+  function gameOver() {
+    stopLoop();
+    state = 'over';
+    if (score > highScore) highScore = score;
+    updateScoreUI();
+    finalScoreLine.textContent = 'SCORE: ' + pad3(score);
+    scoreSaveStatus.textContent = '';
+    overlayGameOver.classList.remove('hidden');
+
+    const player = getPlayerName();
+    submitScoreToServer(player, score).then(() => {
+      fetchLeaderboard(leaderboardGameOver);
+      fetchLeaderboard(leaderboardStart);
+    });
+  }
+
+  // ---------- Rendering ----------
+  function draw() {
+    const w = GRID_SIZE * cellPx;
+    ctx.clearRect(0, 0, w, w);
+
+    // subtle grid
+    ctx.strokeStyle = 'rgba(77,255,140,0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < GRID_SIZE; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * cellPx, 0);
+      ctx.lineTo(i * cellPx, w);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, i * cellPx);
+      ctx.lineTo(w, i * cellPx);
+      ctx.stroke();
+    }
+
+    // fading trail (phosphor afterglow)
+    trail.forEach(p => {
+      ctx.fillStyle = `rgba(77,255,140,${0.18 * p.life})`;
+      ctx.fillRect(p.x * cellPx + 2, p.y * cellPx + 2, cellPx - 4, cellPx - 4);
+      p.life -= 0.15;
+    });
+    trail = trail.filter(p => p.life > 0);
+
+    // food
+    if (food) {
+      ctx.save();
+      ctx.shadowColor = '#ffb000';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = '#ffb000';
+      const pad = cellPx * 0.22;
+      ctx.fillRect(food.x * cellPx + pad, food.y * cellPx + pad, cellPx - pad * 2, cellPx - pad * 2);
+      ctx.restore();
+    }
+
+    // snake
+    snake.forEach((seg, idx) => {
+      ctx.save();
+      const isHead = idx === 0;
+      ctx.shadowColor = isHead ? '#a6ffce' : '#4dff8c';
+      ctx.shadowBlur = isHead ? 14 : 6;
+      ctx.fillStyle = isHead ? '#a6ffce' : '#4dff8c';
+      const pad = 1.5;
+      ctx.fillRect(seg.x * cellPx + pad, seg.y * cellPx + pad, cellPx - pad * 2, cellPx - pad * 2);
+      ctx.restore();
+    });
+  }
+
+  // ---------- Input ----------
+  const KEYMAP = {
+    ArrowUp: { x: 0, y: -1 }, KeyW: { x: 0, y: -1 },
+    ArrowDown: { x: 0, y: 1 }, KeyS: { x: 0, y: 1 },
+    ArrowLeft: { x: -1, y: 0 }, KeyA: { x: -1, y: 0 },
+    ArrowRight: { x: 1, y: 0 }, KeyD: { x: 1, y: 0 }
+  };
+
+  function setDirection(candidate) {
+    // prevent reversing directly into itself
+    if (candidate.x === -direction.x && candidate.y === -direction.y) return;
+    nextDirection = candidate;
+  }
+
+  window.addEventListener('keydown', (e) => {
+    const typingInName = document.activeElement === playerNameInput;
+
+    if (e.code === 'Enter' && typingInName) {
+      playerNameInput.blur();
+      if (state === 'idle' || state === 'over') startGame();
+      return;
+    }
+    if (typingInName) return; // let the user type freely otherwise
+
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (state === 'idle' || state === 'over') startGame();
+      return;
+    }
+    if (e.code === 'KeyP') {
+      togglePause();
+      return;
+    }
+    if (KEYMAP[e.code] && state === 'running') {
+      e.preventDefault();
+      setDirection(KEYMAP[e.code]);
+    }
+  });
+
+  dpad.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-dir]');
+    if (!btn || state !== 'running') return;
+    const dir = btn.dataset.dir;
+    const map = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+    setDirection(map[dir]);
+  });
+
+  // swipe controls
+  let touchStart = null;
+  screenEl.addEventListener('touchstart', (e) => {
+    if (state === 'idle' || state === 'over') { startGame(); return; }
+    const t = e.changedTouches[0];
+    touchStart = { x: t.clientX, y: t.clientY };
+  }, { passive: true });
+
+  screenEl.addEventListener('touchend', (e) => {
+    if (!touchStart) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.x;
+    const dy = t.clientY - touchStart.y;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (Math.abs(dx) > 20) setDirection({ x: dx > 0 ? 1 : -1, y: 0 });
+    } else {
+      if (Math.abs(dy) > 20) setDirection({ x: 0, y: dy > 0 ? 1 : -1 });
+    }
+    touchStart = null;
+  }, { passive: true });
+
+  screenEl.addEventListener('click', () => {
+    if (state === 'idle' || state === 'over') startGame();
+  });
+
+  retryBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    startGame();
+  });
+
+  // ---------- Backend integration ----------
+  function getPlayerName() {
+    const raw = (playerNameInput.value || '').trim();
+    return raw.length ? raw.slice(0, 20) : DEFAULT_PLAYER_NAME;
+  }
+
+  function renderLeaderboard(container, entries) {
+    const list = document.createElement('ol');
+    entries.forEach((entry) => {
+      const li = document.createElement('li');
+      li.innerHTML =
+        '<span class="rank">' + String(entry.rank).padStart(2, '0') + '</span>' +
+        '<span class="name">' + escapeHtml(entry.player) + '</span>' +
+        '<span class="pts">' + pad3(entry.score) + '</span>';
+      list.appendChild(li);
+    });
+
+    container.innerHTML = '<div class="lb-title">TOP SCORES</div>';
+    if (entries.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'lb-empty';
+      empty.textContent = 'NO SCORES YET';
+      container.appendChild(empty);
+    } else {
+      container.appendChild(list);
+    }
+  }
+
+  function renderLeaderboardError(container) {
+    container.innerHTML =
+      '<div class="lb-title">TOP SCORES</div><div class="lb-error">OFFLINE</div>';
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function fetchLeaderboard(container) {
+    try {
+      const res = await fetch(API_BASE + '/leaderboard?limit=5');
+      if (!res.ok) throw new Error('bad status ' + res.status);
+      const entries = await res.json();
+      renderLeaderboard(container, entries);
+    } catch (err) {
+      console.warn('Leaderboard fetch failed:', err);
+      renderLeaderboardError(container);
+    }
+  }
+
+  async function submitScoreToServer(player, finalScore) {
+    if (finalScore <= 0) return; // don't spam the leaderboard with zero runs
+    try {
+      scoreSaveStatus.textContent = 'SAVING SCORE...';
+      const res = await fetch(API_BASE + '/score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player, score: finalScore })
+      });
+      if (!res.ok) throw new Error('bad status ' + res.status);
+      scoreSaveStatus.textContent = 'SCORE SAVED ✓';
+    } catch (err) {
+      console.warn('Score submit failed:', err);
+      scoreSaveStatus.textContent = 'COULD NOT SAVE SCORE (OFFLINE)';
+    }
+  }
+
+  // ---------- Flow control ----------
+  function startGame() {
+    overlayStart.classList.add('hidden');
+    overlayGameOver.classList.add('hidden');
+    overlayPause.classList.add('hidden');
+    resetGame();
+    state = 'running';
+    startLoop();
+    draw();
+  }
+
+  function togglePause() {
+    if (state === 'running') {
+      state = 'paused';
+      stopLoop();
+      overlayPause.classList.remove('hidden');
+    } else if (state === 'paused') {
+      state = 'running';
+      overlayPause.classList.add('hidden');
+      startLoop();
+    }
+  }
+
+  // ---------- Init ----------
+  resizeCanvas();
+  resetGame();
+  draw();
+  updateScoreUI();
+  fetchLeaderboard(leaderboardStart);
+})();
+</script>
+</body>
+</html>

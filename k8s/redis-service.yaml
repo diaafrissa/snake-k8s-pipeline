@@ -1,0 +1,13 @@
+# ClusterIP Service - only reachable from inside the cluster.
+# Its name ("redis") is exactly what REDIS_HOST in the ConfigMap points to;
+# Kubernetes' internal DNS resolves "redis" to this Service's IP automatically.
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379

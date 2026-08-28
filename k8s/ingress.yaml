@@ -1,0 +1,24 @@
+# k3s ships with Traefik pre-installed as its default Ingress controller,
+# so no extra installation is needed for this to work.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: snake-ingress
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: snake.local
+      http:
+        paths:
+          # Everything (including /api/*) goes to the frontend Service.
+          # Nginx inside that container already proxies /api/* to game-api,
+          # so the Ingress itself only needs one simple rule.
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
