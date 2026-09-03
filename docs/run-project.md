@@ -1,3 +1,5 @@
+
+
 # خطوات الإعداد المطلوبة بمجرد توفر VPS (IP + credentials)
 
 هذا الملف قائمة تحقق (checklist) للخطوات اللي لازم تتعمل يدويًا **مرة واحدة بس**
@@ -20,6 +22,7 @@ sudo k3s kubectl get nodes
 ```
 
 ## 2. إعداد kubeconfig
+ستخدم هذه الأوامر لتهيئـة أداة kubectl على جهازك لكي تتمكن من إدارة عنقود k3s بحسابك العادي ودون الحاجة لتنفيذ كل أمر باستخدام sudo.
 
 ```bash
 mkdir -p ~/.kube
@@ -28,6 +31,23 @@ sudo chown $USER:$USER ~/.kube/config
 chmod 600 ~/.kube/config
 export KUBECONFIG=~/.kube/config
 ```
+
+تفصيل الأوامر:
+
+mkdir -p ~/.kube: 
+يُنشئ المجلد القياسي .kube داخل المجلد الرئيسي لمستخدمك لتخزين ملفات تهيئة كوبرنيتيس.
+
+sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config: 
+ينسخ ملف إعدادات k3s الافتراضي (الذي يتضمن مفاتيح الوصول للعنقود) إلى المسار الذي تبحث فيه أداة kubectl تلقائيًا.
+
+sudo chown $USER:$USER ~/.kube/config: 
+يغير ملكية الملف المنسوخ من الجذر (root) إلى حسابك الحالي ($USER).
+
+chmod 600 ~/.kube/config: 
+يحدد صلاحيات قراءة وتعديل الملف للمالك فقط لضمان الأمان، حيث يرفض kubectl العمل إذا كانت صلاحيات ملف التهيئة مفتوحة لبقية مستخدمي النظام.
+
+export KUBECONFIG=~/.kube/config: 
+يضبط متغير البيئة KUBECONFIG في جلسة الطرفية (Terminal) الحالية ليشير صراحة إلى ملف التهيئة.
 
 ## 3. تثبيت Docker Engine على السيرفر
 
@@ -41,6 +61,7 @@ sudo usermod -aG docker $USER
 ```
 
 ## 4. تجهيز نسخة من kubeconfig تقدر الـ containers توصلها
+ لإعطاء GitLab Runner صلاحيات الاتصال والتحكم بعنقود كوبرنيتيس (k3s)، ليتمكن من تنفيذ أوامر النشر (Deployment) وإدارة التطبيقات تلقائيًا أثناء تنفيذ خطوط الأنابيب (CI/CD Pipelines).
 
 ```bash
 sudo mkdir -p /home/gitlab-runner
@@ -79,9 +100,12 @@ sudo gitlab-runner register \
 ```
 
 نقط مهمة في الأمر ده:
-- `--docker-network-mode host` عشان الـ containers تقدر توصل لـ k3s API على `127.0.0.1:6443` بالظبط زي ما لو كانت شغالة على السيرفر مباشرة
-- `--docker-volumes /var/run/docker.sock:...` عشان مرحلة `build` تقدر تستخدم Docker engine بتاع السيرفر (من غير Docker-in-Docker أو `--privileged`)
-- `--docker-volumes .../k3s-kubeconfig:/kube/config:ro` عشان مرحلة `deploy` تقدر توصل لملف الإعدادات؛ الملف ده هو نفسه الـ `KUBECONFIG` اللي متعرّف كمتغير في `.gitlab-ci.yml`
+- `--docker-network-mode host` 
+عشان الـ containers تقدر توصل لـ k3s API على `127.0.0.1:6443` بالظبط زي ما لو كانت شغالة على السيرفر مباشرة
+- `--docker-volumes /var/run/docker.sock:...` 
+عشان مرحلة `build` تقدر تستخدم Docker engine بتاع السيرفر (من غير Docker-in-Docker أو `--privileged`)
+- `--docker-volumes .../k3s-kubeconfig:/kube/config:ro` 
+عشان مرحلة `deploy` تقدر توصل لملف الإعدادات؛ الملف ده هو نفسه الـ `KUBECONFIG` اللي متعرّف كمتغير في `.gitlab-ci.yml`
 - الـ tag **لازم يكون `vps`** بالظبط، لأن `.gitlab-ci.yml` بيدور على runner بالتاج ده في كل المراحل
 
 ## 7. إنشاء Deploy Token من GitLab (عشان الـ cluster يقدر يسحب الصور)
@@ -96,7 +120,46 @@ kubectl create secret docker-registry gitlab-registry-secret \
   --docker-server=registry.gitlab.com \
   --docker-username=<DEPLOY_TOKEN_USERNAME> \
   --docker-password=<DEPLOY_TOKEN_PASSWORD>
+  
+
 ```
+
+هذا الأمر يُستخدم في كوبرنيتيس (Kubernetes) لإنشاء **كائن سرّي (Secret)** يخزن بيانات الاعتماد الخاصة بربط العنقود (Cluster) بسجل حاويات خاص (Private Container Registry) على منصة GitLab.
+
+**لماذا يُستخدم؟**
+عندما تقوم بوضع صور الحاويات (Docker Images) الخاصة بمشروعك داخل سجل خاص غير متاح للعامة على GitLab، لن يتمكن كوبرنيتيس من سحب (Pull) تلك الصور وتشغيل الحاويات (Pods) بدون إذنيات. يُنشئ هذا الأمر المعتمدات المطلوبة حتى يستطيع كوبرنيتيس مصادقة حسابه لدى GitLab وسحب الصور بأمان.
+
+---
+
+**تفصيل أجزاء الأمر:**
+
+* **`kubectl create secret docker-registry`**: 
+يوجه كوبرنيتيس لإنشاء سر مخصص للتعامل مع سجلات Docker (من النوع `kubernetes.io/dockerconfigjson`).
+* **`gitlab-registry-secret`**: 
+اسم السر داخل العنقود (يمكنك تسميته بأي اسم يناسبك للاستدعاء لاحقاً).
+* **`--docker-server=registry.gitlab.com`**: 
+عنوان الخادم الخاص بسجل حاويات GitLab.
+* **`--docker-username=<DEPLOY_TOKEN_USERNAME>`**: 
+اسم المستخدم الخاص بتوكن النشر (Deploy Token) الذي أنشأته في مشروع GitLab.
+* **`--docker-password=<DEPLOY_TOKEN_PASSWORD>`**: 
+رمز السلسلة النصية الخاص بالـ Deploy Token (يقوم مقام كلمة المرور).
+
+---
+
+**كيف يُستخدم داخل ملفات التكوين (Deployment)؟**
+
+بعد تشغيل الأمر، تقوم بالإشارة إلى اسم السر داخل ملف تعريف الـ Pod أو الـ Deployment عبر خيار `imagePullSecrets`:
+
+```yaml
+spec:
+  containers:
+  - name: my-app
+    image: registry.gitlab.com/my-org/my-project/app:v1.0
+  imagePullSecrets:
+  - name: gitlab-registry-secret
+
+```
+
 
 ## 8. تحديث أسماء الصور في الـ manifests
 
@@ -110,7 +173,8 @@ registry.gitlab.com/YOUR-GROUP/YOUR-PROJECT/...
 
 ```bash
 kubectl apply -f k8s/storageclass.yaml
-kubectl apply -f k8s/redis-secret.yaml   # عدّل الباسورد الأول، أو استخدم kubectl create secret
+kubectl apply -f k8s/redis-secret.yaml   
+# عدّل الباسورد الأول، أو استخدم kubectl create secret
 kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/redis-pvc.yaml
 kubectl apply -f k8s/redis-deployment.yaml
@@ -135,3 +199,5 @@ kubectl apply -f k8s/ingress.yaml
 
 كل مرحلة هتشتغل جوه container منعزل خاص بيها على نفس السيرفر - مفيش SSH،
 ومفيش اعتماد على GitLab's shared runners.
+
+

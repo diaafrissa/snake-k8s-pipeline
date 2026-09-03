@@ -1,3 +1,5 @@
+
+
 🎯 إجابات مركزة عن Nginx
 📂 1. ما هي المسارات الثابتة وماذا يوجد بداخلها؟
 📍 /usr/share/nginx/html:
@@ -6,12 +8,12 @@
 غير معروف
 
 في مشروعنا: تم نسخ ملف اللعبة index.html إليه مباشرة عبر الأمر COPY index.html /usr/share/nginx/html/index.html.  
-غير معروف
+
 
 📍 /etc/nginx/conf.d/default.conf:
 
 ماذا يوجد بداخله؟ هذا هو المسار الذي يقرأ منه Nginx إعدادات المواقع (Server Blocks). تم نسخ ملف nginx.conf الخاص بنا ليحل محل الملف الافتراضي عبر الأمر COPY nginx.conf /etc/nginx/conf.d/default.conf.  
-غير معروف
+
 
 🔍 2. ما هو المتغير $uri ولماذا يبحث Nginx عن الملف ثم المجلد؟
 💡 ما هو $uri أصلاً؟
@@ -76,13 +78,16 @@ services:
     networks:
       - snake-net                               # [7]
       ***************************************************************************
-image: redis:7-alpine: استخدام صورة Redis الإصدار 7 المبنية على توزيعة Alpine الخفيفة جداً.  
+image: redis:7-alpine:
+استخدام صورة Redis الإصدار 7 المبنية على توزيعة Alpine الخفيفة جداً.  
 
 
-container_name: snake-redis: تسمية الحاوية باسم ثابت بدلاً من اسم عشوائي.  
+container_name: snake-redis: 
+تسمية الحاوية باسم ثابت بدلاً من اسم عشوائي.  
 
 
-restart: unless-stopped: إعادة تشغيل الحاوية تلقائياً عند انهيارها أو عند إعادة تشغيل الجهاز.  
+restart: unless-stopped: 
+إعادة تشغيل الحاوية تلقائياً عند انهيارها أو عند إعادة تشغيل الجهاز.  
 
 volumes: redis_data:/data:
 
@@ -91,12 +96,15 @@ volumes: redis_data:/data:
 
 السبب: حفظ بيانات قاعدة البيانات بصفة دائمة على الجهاز المستضيف حتى لو حُذفت الحاوية.  
 
-command: تشغيل خادم Redis مع خيار --appendonly yes لحفظ كل عملية كتابة على القرص ومنع فقدان البيانات.  
+command: 
+تشغيل خادم Redis مع خيار --appendonly yes لحفظ كل عملية كتابة على القرص ومنع فقدان البيانات.  
 
-healthcheck: فحص جاهزية الخادم عن طريق إرسال أمر ping. الفحص يتم كل 5 ثوانٍ (interval: 5s)، بمهلة 3 ثوانٍ (timeout: 3s)، ويفشل بعد 5 محاولات خاطئة (retries: 5).  
+healthcheck: 
+فحص جاهزية الخادم عن طريق إرسال أمر ping. الفحص يتم كل 5 ثوانٍ (interval: 5s)، بمهلة 3 ثوانٍ (timeout: 3s)، ويفشل بعد 5 محاولات خاطئة (retries: 5).  
 
 
-networks: ربط الحاوية بشبكة معزولة تسمى snake-net.  
+networks: 
+ربط الحاوية بشبكة معزولة تسمى snake-net.  
 ***************************************************************************
 
 YAML
@@ -123,19 +131,24 @@ YAML
     ports:
       - "8000:8000"                             # [5]
 ***************************************************************************
-build: context: ./backend: المسار: مجلد ./backend المحتوي على كود Python وDockerfile. السبب: بناء صورة التطبيق الخلفي.  
+build: context: ./backend: 
+المسار: مجلد ./backend المحتوي على كود Python وDockerfile. السبب: بناء صورة التطبيق الخلفي.  
 
 
-environment: متغيرات البيئة لربط الخلفية بقاعدة بيانات Redis عبر اسم الحاوية redis والمنفذ 6379.  
+environment: 
+متغيرات البيئة لربط الخلفية بقاعدة بيانات Redis عبر اسم الحاوية redis والمنفذ 6379.  
 
 
-depends_on ... service_healthy: تأجيل تشغيل الـ Backend حتى تصبح حاوية Redis جاهزة تماماً وتمر من اختبار السلامة.  
+depends_on ... service_healthy: 
+تأجيل تشغيل الـ Backend حتى تصبح حاوية Redis جاهزة تماماً وتمر من اختبار السلامة.  
 
 
-healthcheck: اختبار جاهزية التطبيق برمجياً بإرسال طلب لـ /api/ready بانتظار 5 ثوانٍ كفترة سماح أولية (start_period: 5s).  
+healthcheck: 
+اختبار جاهزية التطبيق برمجياً بإرسال طلب لـ /api/ready بانتظار 5 ثوانٍ كفترة سماح أولية (start_period: 5s).  
 
 
-ports: "8000:8000": المسار/الربط: ربط منفذ جهازك 8000 بـ منفذ الحاوية 8000 للوصول المباشر لـ API أثناء التطوير.  
+ports: "8000:8000": المسار/الربط: 
+ربط منفذ جهازك 8000 بـ منفذ الحاوية 8000 للوصول المباشر لـ API أثناء التطوير.  
 
 ***************************************************************************
 YAML
@@ -151,13 +164,16 @@ YAML
       - "8080:80"                               # [3]
     networks:
       - snake-net
-build: context: ./frontend: المسار: مجلد ./frontend المحتوي على ملفات الواجهة الأمامية.  
+build: context: ./frontend: 
+المسار: مجلد ./frontend المحتوي على ملفات الواجهة الأمامية.  
 
 
-depends_on: الانتظار حتى تكون خدمة الـ API جاهزة تماماً قبل تشغيل الواجهة.  
+depends_on: 
+الانتظار حتى تكون خدمة الـ API جاهزة تماماً قبل تشغيل الواجهة.  
 
 
-ports: "8080:80": المسار/الربط: ربط منفذ جهازك 8080 بـ منفذ الحاوية 80 (منفذ Nginx) لفتح اللعبة في المتصفح عبر http://localhost:8080. 
+ports: "8080:80": المسار/الربط: 
+ربط منفذ جهازك 8080 بـ منفذ الحاوية 80 (منفذ Nginx) لفتح اللعبة في المتصفح عبر http://localhost:8080. 
 ------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -194,21 +210,27 @@ HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
 CMD ["nginx", "-g", "daemon off;"]              # [7]
 
 ***************************************************************************
-FROM nginx:1.27-alpine: استخدام خادم Nginx النسخة الخفيفة المبنية على Alpine.  
+FROM nginx:1.27-alpine: 
+استخدام خادم Nginx النسخة الخفيفة المبنية على Alpine.  
 
 
-RUN rm -f ...: حذف إعدادات Nginx الافتراضية والصفحات التجريبية لتنظيف الحاوية.  
+RUN rm -f ...: 
+حذف إعدادات Nginx الافتراضية والصفحات التجريبية لتنظيف الحاوية.  
 
 
-COPY nginx.conf ...: المسار: نسخ إعداداتنا المحلية إلى /etc/nginx/conf.d/default.conf داخل الحاوية.  
+COPY nginx.conf ...:  
+نسخ إعداداتنا المحلية إلى /etc/nginx/conf.d/default.conf داخل الحاوية.  
 
 
-COPY index.html ...: المسار: نسخ ملف الواجهة إلى /usr/share/nginx/html/index.html داخل الحاوية.  
+COPY index.html ...:  
+نسخ ملف الواجهة إلى /usr/share/nginx/html/index.html داخل الحاوية.  
 
 
-EXPOSE 80: التنويه بأن الحاوية تستمع على المنفذ 80.  
+EXPOSE 80: 
+التنويه بأن الحاوية تستمع على المنفذ 80.  
 
-HEALTHCHECK ...: فحص الخادم بطلب /healthz باستخدام أمر wget.  
+HEALTHCHECK ...: 
+فحص الخادم بطلب /healthz باستخدام أمر wget.  
 
 
 الخيار -q: للعمل بصمت بدون طباعة تفاصيل التنزيل.  
@@ -217,7 +239,8 @@ HEALTHCHECK ...: فحص الخادم بطلب /healthz باستخدام أمر w
 الخيار -O-: لطباعة النتيجة في المخرجات مباشرة بدون حفظها في ملف.  
 
 
-CMD ["nginx", "-g", "daemon off;"]: تشغيل Nginx في المقدمة (Foreground) لضمان عدم توقف الحاوية.  
+CMD ["nginx", "-g", "daemon off;"]: 
+تشغيل Nginx في المقدمة (Foreground) لضمان عدم توقف الحاوية.  
 
 -------------------------------------------------------------------------------------------------------------------------------
 
@@ -272,49 +295,64 @@ HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] # [15]
 
 ***************************************************************************
-FROM python:3.12-slim AS builder: مرحلة بناء أولى لتثبيت المكتبات فقط.  
+FROM python:3.12-slim AS builder: 
+مرحلة بناء أولى لتثبيت المكتبات فقط.  
 
 
-WORKDIR /build: تعيين المجلد /build كبيئة عمل.  
+WORKDIR /build: 
+تعيين المجلد /build كبيئة عمل.  
 
 
-ENV PIP_NO_CACHE_DIR=1 ...: تعطيل كاش pip لتقليل حجم الصورة.  
+ENV PIP_NO_CACHE_DIR=1 ...: 
+تعطيل كاش pip لتقليل حجم الصورة.  
 
 
-COPY requirements.txt .: نسخ ملف المكتبات.  
+COPY requirements.txt .: 
+نسخ ملف المكتبات.  
 
 
-RUN pip install --user ...: تثبيت المكتبات في مجلد خاص بالمستخدم (/root/.local).  
+RUN pip install --user ...: 
+تثبيت المكتبات في مجلد خاص بالمستخدم (/root/.local).  
 
 
-FROM python:3.12-slim: البدء من صورة جديدة تماماً لنقل المخرجات فقط بدون أدوات البناء الثقيلة.  
+FROM python:3.12-slim: 
+البدء من صورة جديدة تماماً لنقل المخرجات فقط بدون أدوات البناء الثقيلة.
 
 
-RUN useradd ...: إنشاء مستخدم آمن باسم appuser بدون صلاحيات Root وبدون إمكانية تسجيل الدخول للـ Shell.  
+RUN useradd ...: 
+إنشاء مستخدم آمن باسم appuser بدون صلاحيات Root وبدون إمكانية تسجيل الدخول للـ Shell.  
 
 
-WORKDIR /app: تعيين مجلد العمل الرئيسي إلى /app.  
+WORKDIR /app: 
+تعيين مجلد العمل الرئيسي إلى /app.  
 
 
-COPY --from=builder ...: المسار: نقل المكتبات المثبتة فقط من المرحلة الأولى إلى المجلد الخص بـ appuser.  
+COPY --from=builder ...:  
+نقل المكتبات المثبتة فقط من المرحلة الأولى إلى المجلد الخص بـ appuser.  
 
 
-COPY app/ ./app/: المسار: نقل كود البرمجة من ./app المحلي إلى /app/app/ للحاوية.  
+COPY app/ ./app/:  
+نقل كود البرمجة من ./app المحلي إلى /app/app/ للحاوية.  
 
 
-RUN chown -R appuser:appuser /app: تغيير ملكية الملفات للمستخدم الجديد لحمايتها.  
+RUN chown -R appuser:appuser /app: 
+تغيير ملكية الملفات للمستخدم الجديد لحمايتها.  
 
 
-USER appuser: تحويل مستخدم الحاوية ليكون appuser لزيادة الأمان.  
+USER appuser: 
+تحويل مستخدم الحاوية ليكون appuser لزيادة الأمان.  
 
 
-ENV PATH=...: إضافة المسار الخاص بمكتبات المستخدم إلى المتغير PATH ليعرف النظام مكان التشغيل.  
+ENV PATH=...: 
+إضافة المسار الخاص بمكتبات المستخدم إلى المتغير PATH ليعرف النظام مكان التشغيل.  
 
 
-HEALTHCHECK: فحص صحة التطبيق عبر كود Python يطلب الرابط /api/health.  
+HEALTHCHECK: 
+فحص صحة التطبيق عبر كود Python يطلب الرابط /api/health.  
 
 
-CMD: تشغيل الخادم Uvicorn لتطبيق FastAPI على المنفذ 8000 والإنصات لجميع العناوين 0.0.0.0.  
+CMD: 
+تشغيل الخادم Uvicorn لتطبيق FastAPI على المنفذ 8000 والإنصات لجميع العناوين 0.0.0.0.  
 -------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -358,18 +396,22 @@ server {
     }
 }
 ***************************************************************************
-listen 80; server_name _;: الاستماع على المنفذ 80 لكل أسماء النطاقات.  
-CONF
+listen 80; server_name _; 
+الاستماع على المنفذ 80 لكل أسماء النطاقات.  
 
-root /usr/share/nginx/html;: المسار: تحديد المجلد الذي يحتوي الملفات الثابتة للموقع.  
-CONF
 
-index index.html;: تحديد الصفحة الرئيسية الافتراضية.  
-CONF
+root /usr/share/nginx/html; 
+المسار: تحديد المجلد الذي يحتوي الملفات الثابتة للموقع.  
 
-location /:
 
-try_files $uri $uri/ /index.html;: البحث عن الملف ثم المجلد، ثم التوجيه لـ index.html في حال عدم وجودهما (لمنع أخطاء الـ SPA).  
+index index.html;
+تحديد الصفحة الرئيسية الافتراضية.  
+
+
+location /
+
+try_files $uri $uri/ /index.html; 
+البحث عن الملف ثم المجلد، ثم التوجيه لـ index.html في حال عدم وجودهما (لمنع أخطاء الـ SPA).  
 
 
 add_header Cache-Control "no-cache";: منع المتصفح من كاش الملف لضمان تحميل التحديثات فوراً.  
@@ -388,7 +430,8 @@ proxy_pass http://game-api:8000/api/;: التوجيه: تحويل أي طلب ي
 
 location /healthz:
 
-return 200 "ok\n";: إرجاع نص "ok" مع كود نجاح 200 فوراً من الذاكرة لجهات الفحص دون فتح أي ملف أو كتابة سجّلات
+return 200 "ok\n"; 
+إرجاع نص "ok" مع كود نجاح 200 فوراً من الذاكرة لجهات الفحص دون فتح أي ملف أو كتابة سجّلات
 
 
 -------------------------------------------------------------------------------------------------------------------------------
@@ -403,13 +446,21 @@ return 200 "ok\n";: إرجاع نص "ok" مع كود نجاح 200 فوراً م�
 
 5. (.gitlab-ci.yml)
 لمتغيرات :  
-BACKEND_IMAGE: $CI_REGISTRY_IMAGE/game-api: يعرّف مسار صورة الـ Backend داخل سجل GitLab الخاص بالمشروع.  FRONTEND_IMAGE: $CI_REGISTRY_IMAGE/frontend: يعرّف مسار صورة الـ Frontend.  
-KUBECONFIG: /kube/config: يحدد مسار ملف إعدادات الكوبرنيتس داخل الحاوية المؤقتة.  
+BACKEND_IMAGE: $CI_REGISTRY_IMAGE/game-api: 
+يعرّف مسار صورة الـ Backend داخل سجل GitLab الخاص بالمشروع.  
+FRONTEND_IMAGE: $CI_REGISTRY_IMAGE/frontend: 
+يعرّف مسار صورة الـ Frontend.  
+KUBECONFIG: /kube/config: 
+يحدد مسار ملف إعدادات الكوبرنيتس داخل الحاوية المؤقتة.  
 مرحلة الاختبار (Stage 1: test)
-- BACKEND_IMAGE: $CI_REGISTRY_IMAGE/game-api: يعرّف مسار صورة الـ Backend داخل سجل GitLab الخاص بالمشروع.  
-- FRONTEND_IMAGE: $CI_REGISTRY_IMAGE/frontend: يعرّف مسار صورة الـ Frontend. 
-- KUBECONFIG: /kube/config: يحدد مسار ملف إعدادات الكوبرنيتس داخل الحاوية المؤقتة.  
-- rules: و - changes: و - backend/**/*: شروط التشغيل؛ تعمل هذه المهمة فقط إذا حدث تغيير في ملفات الـ backend.
+- BACKEND_IMAGE: $CI_REGISTRY_IMAGE/game-api: 
+يعرّف مسار صورة الـ Backend داخل سجل GitLab الخاص بالمشروع.  
+- FRONTEND_IMAGE: $CI_REGISTRY_IMAGE/frontend: 
+يعرّف مسار صورة الـ Frontend. 
+- KUBECONFIG: /kube/config: 
+يحدد مسار ملف إعدادات الكوبرنيتس داخل الحاوية المؤقتة.  
+- rules: و - changes: و - backend/**/*: 
+شروط التشغيل؛ تعمل هذه المهمة فقط إذا حدث تغيير في ملفات الـ backend.
 
 
 
@@ -452,11 +503,20 @@ backend/: يحدد مجلد البداية المستهدف (Root Directory).
 
 
 مرحلة البناء (Stage 2: build)rules:
-- rules: و - if: $CI_COMMIT_BRANCH == "main": تعمل فقط عند دمج أو رفع الكود على الفرع الرئيسي main.   
-- docker build -t "$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$BACKEND_IMAGE:latest" ./backend: بناء صورة الـ Backend ووسمها برقم الـ Commit ووسم latest.  
-- docker push "$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA": رفع الصورة برقم الـ Commit للسجل.  - docker push "$BACKEND_IMAGE:latest": رفع الصورة بوسم latest للسجل. 
-- docker build -t "$FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$FRONTEND_IMAGE:latest" ./frontend: بناء صورة الـ Frontend ووسمها بالوسمين.  
-- docker push "$FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA": رفع صورة الـ Frontend برقم الـ Commit.  - docker push "$FRONTEND_IMAGE:latest": رفع صورة الـ Frontend بوسم latest.
+- rules: و - if: $CI_COMMIT_BRANCH == "main" 
+تعمل فقط عند دمج أو رفع الكود على الفرع الرئيسي main.   
+- docker build -t "$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$BACKEND_IMAGE:latest" ./backend 
+بناء صورة الـ Backend ووسمها برقم الـ Commit ووسم latest.  
+- docker push "$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA" 
+رفع الصورة برقم الـ Commit للسجل.  
+- docker push "$BACKEND_IMAGE:latest"
+رفع الصورة بوسم latest للسجل. 
+- docker build -t "$FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$FRONTEND_IMAGE:latest" ./frontend
+بناء صورة الـ Frontend ووسمها بالوسمين.  
+- docker push "$FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA" 
+رفع صورة الـ Frontend برقم الـ Commit.  
+- docker push "$FRONTEND_IMAGE:latest"
+رفع صورة الـ Frontend بوسم latest.
 
 #######################   #######################   #######################   #######################   #######################
 
@@ -465,7 +525,7 @@ backend/: يحدد مجلد البداية المستهدف (Root Directory).
 ملاحظة: 
 وسم الصورة بوسمين (Tags) في هذا الأمر يرجع إلى أسلوب برمجي معتمد يُسمى Dual-Tagging Pattern في إدارة الحاويات وخطوط الإنتاج (CI/CD Pipelines).
 إليك السبب والوظيفة البرمجية لكل وسم منهما:
-1.الوسم الأول: $CI_COMMIT_SHORT_SHA (Immutaible / Versioned Tag)المفهوم: يمثل معرف التغيير الفريد الخاص بـ Git (مثال: a1b2c3d). 
+1. الوسم الأول: $CI_COMMIT_SHORT_SHA (Immutaible / Versioned Tag)المفهوم: يمثل معرف التغيير الفريد الخاص بـ Git (مثال: a1b2c3d). 
 السبب البرمجي:
 #التتبع الدقيق (Traceability): يضمن لك معرفة الكود المصدري والدقيق الذي بُنيت منه هذه الصورة بالظبط.
 #ثبات النسخ (Immutability): هذا الوسم فريد ولا يتكرر أبداً، مما يسمح بحفظ سجل كامل لجميع النسخ التاريخية في الـ Registry دون أن تطغى نسخة على أخرى. 
@@ -487,12 +547,19 @@ docker build -t "$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$BACKEND_IMAGE:latest"
 
 
 مرحلة النشر (Stage 3: deploy):
-script: الأوامر الخاصة بالنشر.  
-- kubectl set image deployment/game-api game-api="$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA": أسلوب التحديث؛ تغيير صورة الـ Backend في كوبرنيتس بالصورة الجديدة برقم الـ Commit لضمان التحديث. 
-- kubectl set image deployment/frontend frontend="$FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA": تغيير صورة الـ Frontend في كوبرنيتس. 
-- kubectl rollout status deployment/game-api --timeout=120s: الانتظار لمدة أقصاها 120 ثانية للتأكد من نجاح تشغيل الـ Backend بدون أخطاء. 
-- kubectl rollout status deployment/frontend --timeout=120s: الانتظار والتأكد من نجاح تشغيل الـ Frontend.  environment: و 
-name: production: توثيق في منصة GitLab يوضح أن هذه العملية قامت بنشر التطبيق على بيئة الإنتاج الفعلية (Production).
+
+الأوامر الخاصة بالنشر:  
+- kubectl set image deployment/game-api game-api="$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA"
+أسلوب التحديث؛ 
+تغيير صورة الـ Backend في كوبرنيتس بالصورة الجديدة برقم الـ Commit لضمان التحديث. 
+- kubectl set image deployment/frontend frontend="$FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA" 
+تغيير صورة الـ Frontend في كوبرنيتس. 
+- kubectl rollout status deployment/game-api --timeout=120s
+الانتظار لمدة أقصاها 120 ثانية للتأكد من نجاح تشغيل الـ Backend بدون أخطاء. 
+- kubectl rollout status deployment/frontend --timeout=120s 
+الانتظار والتأكد من نجاح تشغيل الـ Frontend. و environment: 
+name: production: 
+توثيق في منصة GitLab يوضح أن هذه العملية قامت بنشر التطبيق على بيئة الإنتاج الفعلية (Production).
 
 -------------------------------------------------------------------------------------------------------------------------------
 
@@ -573,10 +640,6 @@ pytest
 
 
 
-
-
-
-7. k8s files:
 
 
 
