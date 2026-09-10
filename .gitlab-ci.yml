@@ -1,18 +1,3 @@
-# GitLab CI/CD pipeline: test -> build -> deploy
-#
-# Runner executor: Docker. Every job runs inside its own isolated container
-# on the VPS, spun up and destroyed per job - not on the bare host shell.
-#
-# Two host resources are bind-mounted into every job container (configured
-# once at runner registration time, see docs/DEPLOYMENT_CHECKLIST.md):
-#   - /var/run/docker.sock  -> lets the "build" job use the VPS's own Docker
-#                              engine to build images (no Docker-in-Docker
-#                              needed, no --privileged required)
-#   - kubeconfig file       -> lets the "deploy" job's kubectl reach the
-#                              local k3s cluster
-# Runner network_mode is set to "host" at registration, so containers share
-# the VPS's network namespace and can reach the k3s API at 127.0.0.1:6443.
-
 stages:
   - test
   - build
