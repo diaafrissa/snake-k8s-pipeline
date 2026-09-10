@@ -3,9 +3,14 @@ kind: Ingress
 metadata:
   name: snake-ingress
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - snake-game.duckdns.org
+      secretName: snake-game-tls # سيرفر cert-manager سيحفظ الشهادة بهذا الاسم
   rules:
     - host: snake-game.duckdns.org
       http:
