@@ -1,12 +1,9 @@
-# ConfigMap: non-secret configuration shared by the backend.
-# These values map 1:1 to the environment variables main.py already
-# reads via os.getenv() - no code changes needed.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: snake-config
 data:
-  REDIS_HOST: "redis"        # matches the Redis Service name below (K8s DNS)
+  REDIS_HOST: "redis"        
   REDIS_PORT: "6379"
   CORS_ORIGINS: "*"
   LEADERBOARD_KEY: "snake:leaderboard"
