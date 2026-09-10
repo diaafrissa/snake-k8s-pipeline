@@ -5,7 +5,7 @@ metadata:
   labels:
     app: game-api
 spec:
-  replicas: 2  # stateless (Redis holds the data) -> safe to run more than one
+  replicas: 2  
   selector:
     matchLabels:
       app: game-api
@@ -18,9 +18,6 @@ spec:
         - name: gitlab-registry-secret
       containers:
         - name: game-api
-          # Replace YOUR-GROUP/YOUR-PROJECT with your actual GitLab namespace/path.
-          # The CI pipeline pushes here automatically using $CI_REGISTRY_IMAGE,
-          # and updates this exact tag on every deploy via `kubectl set image`.
           image: registry.gitlab.com/diaa.frissan.1-group/snake-k8s-pipeline/game-api:latest
           imagePullPolicy: Always
           ports:
@@ -34,14 +31,12 @@ spec:
                 secretKeyRef:
                   name: redis-secret
                   key: REDIS_PASSWORD
-          # Strict check - only receives traffic once Redis is actually reachable
           readinessProbe:
             httpGet:
               path: /api/ready
               port: 8000
             initialDelaySeconds: 5
             periodSeconds: 10
-          # Lenient check - restarts the pod only if the process itself is stuck
           livenessProbe:
             httpGet:
               path: /api/health

@@ -18,7 +18,6 @@ spec:
         - name: gitlab-registry-secret
       containers:
         - name: frontend
-          # Replace YOUR-GROUP/YOUR-PROJECT with your actual GitLab namespace/path.
           image: registry.gitlab.com/diaa.frissan.1-group/snake-k8s-pipeline/frontend:latest
           imagePullPolicy: Always
           ports:

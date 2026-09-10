@@ -1,20 +1,22 @@
-# k3s ships with Traefik pre-installed as its default Ingress controller,
-# so no extra installation is needed for this to work.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: snake-ingress
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+           # ربط الـ Middleware المسئول عن تحويل HTTP إلى HTTPS
+    traefik.ingress.kubernetes.io/router.middlewares: default-redirect-to-https@kubernetescrd
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - snake-game.duckdns.org
+      secretName: snake-game-tls # سيرفر cert-manager سيحفظ الشهادة بهذا الاسم
   rules:
     - host: snake-game.duckdns.org
       http:
         paths:
-          # Everything (including /api/*) goes to the frontend Service.
-          # Nginx inside that container already proxies /api/* to game-api,
-          # so the Ingress itself only needs one simple rule.
           - path: /
             pathType: Prefix
             backend:
