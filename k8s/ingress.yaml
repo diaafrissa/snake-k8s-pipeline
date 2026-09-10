@@ -4,8 +4,6 @@ metadata:
   name: snake-ingress
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    # السطر التالي يجبر Traefik على تحويل جميع طلبات HTTP إلى HTTPS تلقائياً
-    traefik.ingress.kubernetes.io/router.middlewares: kube-system-redirect-to-https@internal
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: traefik
