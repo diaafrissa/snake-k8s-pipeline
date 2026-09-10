@@ -4,7 +4,7 @@ metadata:
   name: snake-ingress
   annotations:
   traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    # ربط الـ Middleware المسئول عن تحويل HTTP إلى HTTPS
+           # ربط الـ Middleware المسئول عن تحويل HTTP إلى HTTPS
     traefik.ingress.kubernetes.io/router.middlewares: default-redirect-to-https@kubernetescrd
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
