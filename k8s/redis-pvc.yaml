@@ -5,7 +5,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: snake-local-path
+  storageClassName: snake-path
   resources:
     requests:
       storage: 1Gi

@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: snake.local
+    - host: snake-game.duckdns.org
       http:
         paths:
           # Everything (including /api/*) goes to the frontend Service.
