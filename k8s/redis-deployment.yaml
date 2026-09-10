@@ -6,9 +6,6 @@ metadata:
     app: redis
 spec:
   replicas: 1
-  # "Recreate" (not the default "RollingUpdate") is required here: the PVC
-  # is ReadWriteOnce, so two Redis pods can never mount it at the same time.
-  # K8s must fully kill the old pod before starting a new one.
   strategy:
     type: Recreate
   selector:
@@ -22,9 +19,6 @@ spec:
       containers:
         - name: redis
           image: redis:7-alpine
-          # $(REDIS_PASSWORD) is substituted by Kubernetes from the env
-          # var defined below — the Secret's value never appears in this
-          # file or in `kubectl get pods -o yaml` in plain text.
           command: ["redis-server", "--appendonly", "yes", "--requirepass", "$(REDIS_PASSWORD)"]
           env:
             - name: REDIS_PASSWORD
@@ -39,8 +33,6 @@ spec:
               mountPath: /data
           readinessProbe:
             exec:
-              # Runs via a shell so it can read $REDIS_PASSWORD from the
-              # process environment (plain redis-cli has no $(VAR) syntax).
               command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping"]
             initialDelaySeconds: 5
             periodSeconds: 5
@@ -60,3 +52,16 @@ spec:
         - name: redis-data
           persistentVolumeClaim:
             claimName: redis-pvc
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+
