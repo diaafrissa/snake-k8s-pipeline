@@ -1,24 +1,63 @@
-# k3s ships with Traefik pre-installed as its default Ingress controller,
-# so no extra installation is needed for this to work.
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: snake-ingress
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+  name: game-api
+  labels:
+    app: game-api
 spec:
-  ingressClassName: traefik
-  rules:
-    - host: snake.local
-      http:
-        paths:
-          # Everything (including /api/*) goes to the frontend Service.
-          # Nginx inside that container already proxies /api/* to game-api,
-          # so the Ingress itself only needs one simple rule.
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 80
+  replicas: 2  
+  selector:
+    matchLabels:
+      app: game-api
+  template:
+    metadata:
+      labels:
+        app: game-api
+    spec:
+      imagePullSecrets:
+        - name: gitlab-registry-secret
+      containers:
+        - name: game-api
+          image: registry.gitlab.com/diaa.frissan.1-group/snake-k8s-pipeline/game-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: snake-config
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /api/ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: game-api
+spec:
+  selector:
+    app: game-api
+  ports:
+    - port: 8000
+      targetPort: 8000
