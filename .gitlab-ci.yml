@@ -6,7 +6,7 @@ stages:
 variables:
   BACKEND_IMAGE: $CI_REGISTRY_IMAGE/game-api
   FRONTEND_IMAGE: $CI_REGISTRY_IMAGE/frontend
-  KUBECONFIG: /kube/config  # path where the runner mounts the host's kubeconfig
+  KUBECONFIG: /kube/config    # path where the runner mounts the host's kubeconfig
 
 # ---------------------------------------------------------------------------
 # Stage 1: run the pytest suite inside a clean python:3.12-slim container.
