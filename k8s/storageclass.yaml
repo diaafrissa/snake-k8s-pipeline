@@ -1,23 +1,7 @@
-# Custom StorageClass instead of relying on k3s's implicit default
-# ("local-path"). Same provisioner under the hood, but explicit and
-# tuned for this project:
-#
-# - reclaimPolicy: Retain
-#     If the PVC is ever deleted (e.g. by mistake, or during a Deployment
-#     rebuild), the underlying data is kept instead of being wiped
-#     immediately. Important for a leaderboard - losing it silently would
-#     be a bad surprise. You'd need to manually clean it up later if truly
-#     no longer needed.
-#
-# - volumeBindingMode: WaitForFirstConsumer
-#     Delays provisioning the actual volume until a Pod that uses the PVC
-#     is actually scheduled. This matters more on multi-node clusters (so
-#     the volume is created on the same node the Pod lands on) - harmless
-#     but good practice even on a single-node k3s setup.
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: snake-local-path
+  name: snake-path
 provisioner: rancher.io/local-path
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
