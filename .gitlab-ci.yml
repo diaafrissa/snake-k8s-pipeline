@@ -20,6 +20,7 @@ test:
     - changes:
         - backend/**/*
   before_script:
+    - set -eou pipefail
     - cd backend
     - pip install -q -r requirements-dev.txt
   script:
@@ -35,6 +36,8 @@ build:
     - vps
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+  before_script:
+    - set -eou pipefail
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker build -t "$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$BACKEND_IMAGE:latest" ./backend
@@ -55,6 +58,8 @@ deploy:
     - vps
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+  before_script:
+    - set -eou pipefail
   script:
     - kubectl apply -f k8s/
     - kubectl set image deployment/game-api game-api="$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA"
