@@ -13,14 +13,13 @@ A complete, production-ready DevOps implementation of a microservice-based Retro
 
 ## 🏗️ Pipeline
 
-any change on code → Git Push → Test → Build & Push Images → Secure K8s Deployment
+any code Change → Git Push → Test → Build & Push Images → Secure K8s Deployment
 
+• **Test:** Runs `pytest` unit tests in an isolated Python container.
 
-• Test: Installs packages and runs `pytest` unit tests inside an isolated `python:3.12-slim` container on backend changes.
+• **Build:** Builds and pushes Docker images (`game-api` & `frontend`) to GitLab Registry tagged with `$CI_COMMIT_SHORT_SHA`.
 
-• Build: Securely builds and pushes Docker images for both `game-api` and `frontend` using host Docker socket, tagged with `$CI_COMMIT_SHORT_SHA` and `latest`.
-
-• Deploy: Applies declarative Kubernetes manifests (`kubectl apply -f k8s/`), enforces TLS/SSL rules, performs zero-downtime rolling updates (`kubectl set image`), and verifies deployment health via rollout status checks.
+• **Deploy:** Applies K8s manifests and executes zero-downtime rolling updates (`kubectl rollout`).
 
 ---
 
@@ -60,35 +59,32 @@ any change on code → Git Push → Test → Build & Push Images → Secure K8s 
 
 ## 🛠️ Tech Stack & DevOps Tools
 
-Application Stack: Python 3.12 (FastAPI, Uvicorn), HTML5 Canvas, ES6 JavaScript, Nginx 1.27 Alpine
+- **App & DB:** Python 3.12 (FastAPI), HTML5 Canvas, Nginx 1.27 Alpine, Redis 7 (AOF Persistence)
+- **CI/CD & Registry:** GitLab CI/CD, GitLab Container Registry
+- **Orchestration & Network:** Kubernetes, Traefik Ingress Controller, Dynamic DNS (DuckDNS)
+- **Security & SSL/TLS:** Cert-Manager, Let's Encrypt (TLS 1.3), K8s Secrets
+- **Testing & Tooling:** Pytest, Fakeredis, Docker Engine
 
-Database & Persistence: Redis 7 Alpine with Append-Only File (AOF) state persistence
+---
 
-CI/CD Orchestration: GitLab CI/CD, GitLab Container Registry
+## 🔒 Security & DevOps Best Practices
 
-Shell & Pipeline Hardening: Defensive Bash Scripting (`set -eou pipefail`)
-
-Containerization: Docker Engine, Multi-Stage / Lightweight Slim Base Images
-
-Orchestration & Networking: Kubernetes (K8s), Traefik Ingress Controller, Dynamic DNS (DuckDNS)
-
-Security & SSL/TLS: Cert-Manager, Let's Encrypt Certificate Authority, TLS 1.3 Encryption, Kubernetes Secrets
-
-Automation & Testing: Pytest, Pytest-Asyncio, Fakeredis
-
-Deployment Provider: Self-Hosted VPS Cluster (via secure `kubectl` rollout)
+- **CI/CD Safety (`set -eou pipefail`)**: Enforced in pipeline scripts to exit immediately on error, undefined variables, or piped command failure.
+- **Automated SSL/TLS**: Cert-Manager provisions Let's Encrypt certificates with HTTP-to-HTTPS (301) redirection via Traefik.
+- **Secrets Isolation**: Sensitve credentials (Redis auth, authentication tokens, kubeconfig) are injected via K8s Secrets and masked GitLab CI/CD variables.
+- **Hardened Workloads**: Minimal base images (`python:3.12-slim`, `nginx:alpine`) with explicit K8s Liveness and Readiness probes.
 
 ---
 
 ## ⚙️Environment Variables Configured in GitLab CI:
 
-BACKEND_IMAGE: `$CI_REGISTRY_IMAGE/game-api`
+- BACKEND_IMAGE: `$CI_REGISTRY_IMAGE/game-api`
 
-FRONTEND_IMAGE: `$CI_REGISTRY_IMAGE/frontend`
+- FRONTEND_IMAGE: `$CI_REGISTRY_IMAGE/frontend`
 
-KUBECONFIG: `/kube/config` (Masked file variable containing cluster connection credentials)
+- KUBECONFIG: `/kube/config` (Masked file variable containing cluster connection credentials)
 
-CI_REGISTRY_USER / CI_REGISTRY_PASSWORD: Masked Container Registry authentication tokens
+- CI_REGISTRY_USER / CI_REGISTRY_PASSWORD: Masked Container Registry authentication tokens
 
 ---
 
@@ -105,7 +101,7 @@ Bash:
 
 - **Start all microservices**
   ```bash
-  docker compose up --build
+  docker compose -f docker-compose.yml up --build
   ```
 
 - **Access Local Endpoints**
