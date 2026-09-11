@@ -80,30 +80,7 @@ Deployment Provider: Self-Hosted VPS Cluster (via secure `kubectl` rollout)
 
 ---
 
-## ⚙️ GitLab CI/CD Pipeline Configuration Details
-
-### Pipeline Execution Guarantees
-Every CI/CD job begins with defensive shell options to guarantee pipeline predictability:
-```bash
-before_script:
-  - set -eou pipefail
-```
-
-### Pipeline Stages (.gitlab-ci.yml)
-
-### Test Stage (test):
-
- Installs dependencies and executes isolated unit tests inside a `python:3.12-slim` container.
-
-### Build Stage (build): 
-
-Authenticates securely via `$CI_REGISTRY_USER` / `$CI_REGISTRY_PASSWORD`, builds container images for `game-api` and `frontend`, tagging them with `$CI_COMMIT_SHORT_SHA` for immutable image tagging.
-
-### Deploy Stage (deploy):
-
-Loads encrypted `$KUBECONFIG` credentials, executes `kubectl apply -f k8s/`, updates deployment images, and monitors `kubectl rollout status` to guarantee zero-downtime releases.
-
-### Environment Variables Configured in GitLab CI:
+## ⚙️Environment Variables Configured in GitLab CI:
 
 BACKEND_IMAGE: `$CI_REGISTRY_IMAGE/game-api`
 
