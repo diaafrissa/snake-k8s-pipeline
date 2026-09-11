@@ -1,6 +1,6 @@
 
 
-🎯 إجابات مركزة عن Nginx
+#🎯 إجابات مركزة عن Nginx
 📂 1. ما هي المسارات الثابتة وماذا يوجد بداخلها؟
 📍 /usr/share/nginx/html:
 
@@ -22,7 +22,7 @@
 
 مثال: إذا طلب المستخدم http://localhost:8080/styles/main.css تكون قيمة $uri هي /styles/main.css.
 
-⚙️ شرح الأمر try_files $uri $uri/ /index.html; بالترتيب:
+#⚙️ شرح الأمر try_files $uri $uri/ /index.html; بالترتيب:
 
   
 
@@ -59,8 +59,8 @@
 
 
 
-🛠️ الشرح الشامل لجميع الملفات والأوامر
-🐳 1. ملف Docker Compose (docker-compose.yml)
+##🛠️ الشرح الشامل لجميع الملفات والأوامر
+##### 🐳 1. ملف Docker Compose (docker-compose.yml)
 YAML
 services:
   redis:
@@ -77,7 +77,8 @@ services:
       retries: 5
     networks:
       - snake-net                               # [7]
-      ***************************************************************************
+ ***************************************************************************
+- **explain**:
 image: redis:7-alpine:
 استخدام صورة Redis الإصدار 7 المبنية على توزيعة Alpine الخفيفة جداً.  
 
@@ -131,7 +132,7 @@ YAML
     ports:
       - "8000:8000"                             # [5]
 ***************************************************************************
-build: context: ./backend: 
+- **explain**:
 المسار: مجلد ./backend المحتوي على كود Python وDockerfile. السبب: بناء صورة التطبيق الخلفي.  
 
 
@@ -189,11 +190,7 @@ ports: "8080:80": المسار/الربط:
 
 
 
-
-
-
-
-🖼️ 2. ملف Dockerfile الخاص بالواجهة (frontend/Dockerfile)
+#### 🖼️ 2. ملف Dockerfile الخاص بالواجهة (frontend/Dockerfile)
 Dockerfile
 FROM nginx:1.27-alpine                         # [1]
 
@@ -210,6 +207,7 @@ HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
 CMD ["nginx", "-g", "daemon off;"]              # [7]
 
 ***************************************************************************
+- **explain**:
 FROM nginx:1.27-alpine: 
 استخدام خادم Nginx النسخة الخفيفة المبنية على Alpine.  
 
@@ -251,13 +249,7 @@ CMD ["nginx", "-g", "daemon off;"]:
 
 
 
-
-
-
-
-
-
-🐍 3. ملف Dockerfile الخاص بالخلفية (backend/Dockerfile)
+####🐍 3. ملف Dockerfile الخاص بالخلفية (backend/Dockerfile)
 Dockerfile
 # ---------- المرحلة الأولى: تجميع المكتبات ----------
 FROM python:3.12-slim AS builder                # [1]
@@ -295,6 +287,7 @@ HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] # [15]
 
 ***************************************************************************
+- **explain**:
 FROM python:3.12-slim AS builder: 
 مرحلة بناء أولى لتثبيت المكتبات فقط.  
 
@@ -362,11 +355,11 @@ CMD:
 
 
 
-⚙️ 4. ملف إعدادات Nginx (nginx.conf)
+#### ⚙️ 4. ملف إعدادات Nginx (nginx.conf)
 Nginx
 server {
     listen 80;                                  # [1]
-    server_name _;
+    server_name snake-game.duckdns.org;
 
     root /usr/share/nginx/html;                 # [2]
     index index.html;                           # [3]
@@ -396,8 +389,9 @@ server {
     }
 }
 ***************************************************************************
-listen 80; server_name _; 
-الاستماع على المنفذ 80 لكل أسماء النطاقات.  
+- **explain**:
+listen 80; server_name snake-game.duckdns.org; 
+الاستماع على المنفذ 80  domain name: snake-game.duckdns.org.  
 
 
 root /usr/share/nginx/html; 
@@ -441,10 +435,7 @@ return 200 "ok\n";
 
 
 
-
-
-
-5. (.gitlab-ci.yml)
+#### 5. (.gitlab-ci.yml)
 لمتغيرات :  
 BACKEND_IMAGE: $CI_REGISTRY_IMAGE/game-api: 
 يعرّف مسار صورة الـ Backend داخل سجل GitLab الخاص بالمشروع.  
@@ -463,11 +454,9 @@ KUBECONFIG: /kube/config:
 شروط التشغيل؛ تعمل هذه المهمة فقط إذا حدث تغيير في ملفات الـ backend.
 
 
-
-
 #######################   #######################   #######################   #######################   #######################
 
-#######################   #######################   #######################   #######################   #######################
+#note:
 rules: و - changes: و - backend/**/*                                         
 - برمجياً، يعتمد هذا التركيب على آليات إدارة الأحداث (Event-Driven Pipeline) وتحليل الفوارق البرمجية (Git Diffing Engine) داخل منصة GitLab CI/CD.
 
@@ -497,11 +486,6 @@ backend/: يحدد مجلد البداية المستهدف (Root Directory).
 
 
 
-
-
-
-
-
 مرحلة البناء (Stage 2: build)rules:
 - rules: و - if: $CI_COMMIT_BRANCH == "main" 
 تعمل فقط عند دمج أو رفع الكود على الفرع الرئيسي main.   
@@ -518,11 +502,10 @@ backend/: يحدد مجلد البداية المستهدف (Root Directory).
 - docker push "$FRONTEND_IMAGE:latest"
 رفع صورة الـ Frontend بوسم latest.
 
-#######################   #######################   #######################   #######################   #######################
 
 #######################   #######################   #######################   #######################   #######################
 
-ملاحظة: 
+#note: 
 وسم الصورة بوسمين (Tags) في هذا الأمر يرجع إلى أسلوب برمجي معتمد يُسمى Dual-Tagging Pattern في إدارة الحاويات وخطوط الإنتاج (CI/CD Pipelines).
 إليك السبب والوظيفة البرمجية لكل وسم منهما:
 1. الوسم الأول: $CI_COMMIT_SHORT_SHA (Immutaible / Versioned Tag)المفهوم: يمثل معرف التغيير الفريد الخاص بـ Git (مثال: a1b2c3d). 
@@ -561,14 +544,47 @@ docker build -t "$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$BACKEND_IMAGE:latest"
 name: production: 
 توثيق في منصة GitLab يوضح أن هذه العملية قامت بنشر التطبيق على بيئة الإنتاج الفعلية (Production).
 
+### المتغيرات التي تستخدمها الـ Pipeline (تُعرَّف تلقائياً) 
+
+: 
+$CI_REGISTRY: 
+رابط الـContainer Registry الخاص بـ GitLab (مثل registry.gitlab.com).  
+
+$CI_REGISTRY_USER:
+اسم المستخدم المؤقت الذي تنشئه GitLab أثناء تشغيل الـ Pipeline لتسجيل الدخول للـ Registry.  
+
+$CI_REGISTRY_PASSWORD:
+الرمز المؤقت (Token) للتحقق والتسجيل.  
+
+$CI_REGISTRY_IMAGE:
+المسار الكامل لمستودع الصور الخاص بمشروعك على GitLab.  
+
+$CI_COMMIT_SHORT_SHA:
+أول 8 أرقام/حروف من الـ Commit SHA لبناء صورة تحمل إصدراً فريداً لكل رفع.
+
+- جميع هذه المتغيرات تتيحها منصة GitLab مجاناً وتلقائياً لكل مشروع. 
+
+### أمر `set -eou pipefail`
+هو نمط حماية شائع في سكربتات Bash (يُعرف بـ Strict Mode)، والهدف منه إيقاف تنفيذ السكربت فوراً عند حدوث أي خطأ بدلاً من التغاضي عنه والاستمرار.
+
+تفاصيل كل خيار:
+
+* **`-e` (Exit on error):**
+يجعل السكربت يفشل ويتوقف فوراً إذا أرجعت أي كلمة/أمر قيمة غير صفرية (أي أن الأمر فشل). بدونه، يكمل السكربت تنفيذ بقية الأوامر حتى لو فشل أحد الأوامر المهمة في المنتصف.
+* **`-u` (Unset variables):**
+يعامل استخدام أو استدعاء أي متغير غير معرّف (Unset Variable) كخطأ متمدد، وينهي تنفيذ السكربت فوراً. هذا يمنع الأخطاء الإملائية في أسماء المتغيرات من التسبب في سلوكيات غير متوقعة.
+* **`-o pipefail` (Pipeline failure):**
+افتراضياً في Bash، إذا قمت بربط عدة أوامر عبر الأنابيب (`cmd1 | cmd2 | cmd3`)، فإن السكربت ينظر فقط إلى حالة نجاح أو فشل **آخر أمر فقط** (`cmd3`). تفعيل `pipefail` يجعل السلسلة كاملة تُعتبر فاشلة إذا فشل **أي أمر** فيها.
+
+ 
+
 -------------------------------------------------------------------------------------------------------------------------------
 
 
 
 
 
-
-6. test files:
+#### 6. test files:
  المشروع يستخدم مكتبة **`pytest`** (وهي المكتبة الأشهر لاختبارات بايثون، وهذا واضح من أسماء الملفات):
 
 ### 1. ملف `pytest.ini` (ملف الإعدادات)

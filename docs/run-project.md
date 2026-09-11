@@ -208,4 +208,217 @@ kubectl apply -f k8s/ingress.yaml
 كل مرحلة هتشتغل جوه container منعزل خاص بيها على نفس السيرفر - مفيش SSH،
 ومفيش اعتماد على GitLab's shared runners.
 
+-------------------------------------------------------------------------------------------------------------------------------
+## DNS from (duckdns)
+عملية إنشاء نطاق على DuckDNS وسريعة جداً ولا تتطلب سوى أقل من دقيقتين. 
+
+ 
+
+1.تسجيل الدخول:متطلب أساسي. 
+
+سجل الدخول عبر DuckDNS.org باستخدام حساب Google أو GitHub الخاص بك. 
+
+ 
+
+2.حجز اسم النطاق:30 ثانية. 
+
+في مربع sub-domain، أكتب الاسم الذي تريده لنطاقك (مثال: my-vps-server) ثم اضغط على add domain. 
+
+ 
+
+3.ربط الـ IP:فوراً. 
+
+سيظهر النطاق في القائمة تحت اسم my-vps-server.duckdns.org. ضع عنوان الـ IPv4 الخاص بالـ VPS في خانة الـ IP ثم اضغط update ip. 
+
+ 
+
+4.حفظ الـ Token:مهم. 
+
+انسخ رمز الـ Token الظاهر أعلى الصفحة، ستلاحظ أنه عبارة عن نص طويل من الأرقام والحروف وتصنع منه سكريبت التحديث التلقائي. 
+
+ 
+
+تفعيل التحديث التلقائي للـ IP على VPS 
+
+لضمان استمرار ربط النطاق بالـ VPS في حال تغير الـ IP: 
+
+ 
+
+افتح مبدل الأوامر Terminal في الـ VPS وأنشئ مجلداً للخدمة: 
+
+ 
+
+Bash 
+
+mkdir -p ~/duckdns && cd ~/duckdns 
+ 
+
+أنشئ ملف السكريبت: 
+
+ 
+
+Bash 
+
+nano duck.sh 
+ 
+
+أضف السطر التالي (استبدل YOUR_DOMAIN باسم نطاقك بدون duckdns.org، و YOUR_TOKEN بالرمز الخاص بك): 
+
+ 
+
+Bash 
+
+echo url="https://www.duckdns.org/update?domains=YOUR_DOMAIN&token=YOUR_TOKEN&ip=" | curl -k -K - 
+ 
+
+احفظ الملف (Ctrl+O ثم Enter ثم Ctrl+X) وامنحه صلاحية التشغيل: 
+
+ 
+
+Bash 
+
+chmod 700 duck.sh 
+ 
+
+اختبر السكريبت بتشغيله: 
+
+ 
+
+Bash 
+
+./duck.sh 
+ 
+
+إذا ظهرت كلمة OK فإن الربط تم بنجاح. 
+
+ 
+
+أضف السكريبت إلى crontab ليعمل كل 5 دقائق تلقائياً: 
+
+ 
+
+Bash 
+
+crontab -e 
+ 
+
+أضف هذا السطر في الأسفل: 
+
+Bash 
+
+ 15 3 15 * *  ~/duckdns/duck.sh >/dev/null 2>&1
+سيحدث الip تلقائيا كل شهر يوم 15 الساعة 3 الدقيقة 15 دقيقة
+-------------------------------------------------------------------------------------------------------------------------------
+## tls/ssl certificate:
+لتحويل الموقع إلى **`https://`** مجانًا وبشهادة رسمية موثوقة من **Let's Encrypt**، الحل القياسي والمعتمد في Kubernetes هو استخدام **`cert-manager`**.
+
+يقوم `cert-manager` بإدارة عملية إصدار الشهادات وتجديدها تلقائيًا قبل انتهائها.
+
+---
+
+1. **تثبيت cert-manager على VPS:** الخطوة الأولى.
+من داخل سيرفر الـ VPS، نفذ هذا الأمر لتثبيت أدوات وموارد `cert-manager`:
+
+```bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+
+```
+
+*(انتظر دقيقة لتشغيل الـ Pods الخاصة بـ cert-manager)*.
+
+
+2. **إنشاء ClusterIssuer لـ Let's Encrypt:** الخطوة الثانية.
+أنشئ ملفًا جديدًا باسم `k8s/cluster-issuer.yaml` داخل مشروعك. هذا الملف يخبر Let's Encrypt بكيفية التحقق من ملكيتك للدومين عبر HTTP-01 Challenge:
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: your-email@gmail.com # <--- ضع إيميلك الحقيقي للتنبيهات
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik
+
+```
+3. إنشاء ملف `k8s/redirect-middleware.yaml`
+المشكلة المتبقية هي فقط أن **Traefik** يستقبل طلبات الـ HTTP ولا يعيد توجيهها تلقائياً إلى HTTPS.
+
+لحل هذا الموضوع نهائياً وبطريقة مستقرة ومتوافقة مع K3s، سنتأكد من إعداد الـ Middleware الخاص بالتحويل بالشكل الصحيح:
+
+تأكد من وجود هذا الملف داخل مجلد `k8s/` بالمحتوى التالي:
+
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+
+```
+4. تحديث ملف `k8s/ingress.yaml`
+
+عدّل ملف `k8s/ingress.yaml` ليربط الـ Entrypoints مع الـ Middleware بشكل صحيح:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: snake-ingress
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    # ربط الـ Middleware المسئول عن تحويل HTTP إلى HTTPS
+    traefik.ingress.kubernetes.io/router.middlewares: default-redirect-to-https@kubernetescrd
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - snake-game.duckdns.org
+      secretName: snake-game-tls
+  rules:
+    - host: snake-game.duckdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+
+```
+
+5. رفع التعديلات وتنفيذ الـ Pipeline
+
+من جهازك المحلي، قم برفع الملفات للتطبيق تلقائياً:
+
+```bash
+git add k8s/redirect-middleware.yaml k8s/ingress.yaml
+git commit -m "Configure HTTP to HTTPS redirect middleware"
+git push origin main
+
+```
+
+5. **متابعة إصدار الشهادة:** التحقق.
+يمكنك متابعة حالة طلب الشهادة من الـ VPS ببطء عبر هذا الأمر:
+
+```bash
+kubectl get certificate
+
+```
+
+*النتيجة الناجحة:* سترى حالة `READY` تحت القيمة `True` خلال دقيقة إلى دقيقتين. يمكنك بعدها زيارة `[https://snake-game.duckdns.org](https://snake-game.duckdns.org)` لتجد القفل الأخضر يعمل مجانًا ومؤمنًا بالكامل!
+
+
 
