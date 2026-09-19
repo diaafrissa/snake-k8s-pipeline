@@ -71,7 +71,7 @@ sudo usermod -aG docker $USER
 ```
 
 ## 4. تجهيز نسخة من kubeconfig تقدر الـ containers توصلها
- لإعطاء (المستخدم الذي أنشأناه في Dockerfile ) الاتصال والتحكم بعنقود كوبرنيتيس (k3s)، ليتمكن من تنفيذ أوامر النشر (Deployment) وإدارة التطبيقات تلقائيًا أثناء تنفيذ خطوط الأنابيب (CI/CD Pipelines).
+ لإعطاء (المستخدم الذي سينشأ عند تثبيت gitlab-runner ) الاتصال والتحكم بعنقود كوبرنيتيس (k3s)، ليتمكن من تنفيذ أوامر النشر (Deployment) وإدارة التطبيقات تلقائيًا أثناء تنفيذ خطوط الأنابيب (CI/CD Pipelines).
 
 ```bash
 sudo mkdir -p /home/gitlab-runner
@@ -91,7 +91,7 @@ sudo apt-get install gitlab-runner
 sudo usermod -aG docker gitlab-runner
 ```
 
-## 6. تسجيل الـ Runner (Docker executor)sudo usermod -aG docker gitlab-runner
+## 6. تسجيل الـ gitlab-runner  على gitlab طريقة (Docker-Executor)  :
 
 من صفحة المشروع على GitLab: **Settings > CI/CD > Runners**
 create project runner -> نضيف له tag 
@@ -112,8 +112,8 @@ sudo gitlab-runner register \
 
 نقط مهمة في الأمر ده:
 - `--docker-network-mode host` 
-عشان الـ containers تقدر توصل لـ k3s API على `127.0.0.1:6443` بالظبط زي ما لو كانت شغالة على السيرفر مباشرة
-- `--docker-volumes /var/run/docker.sock:...` 
+عشان الـ containers تقدر توصل لـ k3s API على `127.0.0.1:6443` بالظبط زي ما لو كانت شغالة على السيرفر مباشرة(حيث ان ال jobs تبع ال pipeline تعمل داخل container على ال vps "gitlab-runner" ) ( docker executor)
+-  `--docker-volumes /var/run/docker.sock:...` 
 عشان مرحلة `build` تقدر تستخدم Docker engine بتاع السيرفر (من غير Docker-in-Docker أو `--privileged`)
 - `--docker-volumes .../k3s-kubeconfig:/kube/config:ro` 
 عشان مرحلة `deploy` تقدر توصل لملف الإعدادات؛ الملف ده هو نفسه الـ `KUBECONFIG` اللي متعرّف كمتغير في `.gitlab-ci.yml`
@@ -328,7 +328,10 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 
 
 2. **إنشاء ClusterIssuer لـ Let's Encrypt:** الخطوة الثانية.
-أنشئ ملفًا جديدًا باسم `k8s/cluster-issuer.yaml` داخل مشروعك. هذا الملف يخبر Let's Encrypt بكيفية التحقق من ملكيتك للدومين عبر HTTP-01 Challenge:
+- هذا الملف يقوم بإنشاء مورد ClusterIssuer خاص بأداة cert-manager في كبرنيتس (Kubernetes)، وهدفه إعداد مصدر مركزي لإصدار شهادات الحماية SSL/TLS المجانية والموثوقة تلقائياً باستخدام خدمة Let's Encrypt على مستوى الكوستر بالكامل.
+- خادم ACME (server): يوجه الطلبات إلى خادم الإنتاج الرسمي الخاص بـ Let's Encrypt لإصدار شهادات حقيقية ومعتمدة من المتصفحات
+- أنشئ ملفًا جديدًا باسم `k8s/cluster-issuer.yaml` داخل مشروعك. هذا الملف يخبر Let's Encrypt بكيفية التحقق من ملكيتك للدومين عبر HTTP-01 Challenge:
+
 
 ```yaml
 apiVersion: cert-manager.io/v1

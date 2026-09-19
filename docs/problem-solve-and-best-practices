@@ -1,0 +1,145 @@
+جميع المشاكل والأخطاء التقنية، الحلول المتبعة، والممارسات المتقدمة (Best Practices) الشاملة والدقيقة الخاصة بالمشروع الثالث (Phosphor Snake Arcade) بناءً على ملفات الـ Frontend، Backend، Kubernetes K3، و CI/CD Pipeline الخاصة بك: 
+
+ 
+ 
+
+أولاً: المشاكل والأخطاء المتقدمة التي تم تجاوزها (Troubleshooting & Issues Solved) 
+
+1. معضلة قفل التخزين عند التحديث (PVC Lock & Pod Stuck State) 
+
+المشكلة: عند استخدام قرص تخزين من نوع ReadWriteOnce (RWO)، إذا حاولت تحديث حاوية Redis بأسلوب RollingUpdate (وهو الافتراضي في K8s)، يفشل الـ Pod الجديد في التشغيل ويبقى في حالة ContainerCreating أو CrashLoopBackOff لأن القرص يكون محجوزاً ومقفولاً من قبل الـ Pod القديم.  
+
+ 
+
+الحل: تحديد استراتيجية النشر بشكل صريح لتكون strategy.type: Recreate في ملف redis-deployment.yaml. هذا يجبر Kubernetes على إيقاف وقتل الـ Pod القديم أولاً لفك قفل Volume التخزين، ثم تشغيل الـ Pod الجديد بسلام.  
+
+ 
+
+2. تفادي معضلة سياسات تقاطع الأصول (CORS Avoidance Architecture) 
+
+المشكلة: الاتصال المباشر بين متصفح العميل (Frontend) وخدمة الـ Backend كـ Endpoint منفصل يؤدي لمشاكل أمان وتعقيدات ضبط عناوين الـ CORS عبر النطاقات المختلفة (Cross-Origin Resource Sharing). 
+
+كيف تنشأ مشكلة CORS( Cross-Origin Resource Sharing) (مشاركة الموارد عبر الأصول المختلفة)،  أساساً؟ (السيناريو المباشر) لفهم الحل، يجب أن نفهم كيف يفكر متصفح الويب (مثل Chrome). المتصفحات تطبق قاعدة أمنية صارمة تُسمى "Same-Origin Policy" تمنع هذه السياسة أي صفحة ويب من إرسال طلبات برمجية (عبر JavaScript أو fetch/Axios) لقراءة بيانات من "أصل" (Origin) مختلف عن الأصل الذي جُلبت منه الصفحة، وذلك لمنع سرقة البيانات والتجسس بين المواقع. 
+
+يتكون "الأصل" من ثلاثة عناصر مجتمعة: 
+
+Origin = Protocol + Domain + Port 
+
+إذا اختلف أي جزء من هذه الثلاثة، يُعتبر الأصل مختلفاً (Cross-Origin). 
+
+الشرح من المشروع: 
+
+- تخيل أن المستخدم فتح اللعبة عبر الرابط [http://snake.local](http://snake.local) (الذي يعمل افتراضياً على المنفذ 80). 
+
+- عندما يحاول كود JavaScript إرسال "السكور" إلى الـ Backend لو كان موجوداً على رابط أو منفذ مختلف مثل http://game-api:8000. 
+
+- هنا يتدخل المتصفح ويوقف الطلب فوراً ويقول: "أنت تحاول إرسال بيانات من المنفذ 80 إلى المنفذ 8000. هذان مصدران مختلفان (Cross-Origin)، وهذا قد يكون هجوماً أمنياً!" 
+
+- لتجاوز هذا، يضطر المبرمجون عادةً لإضافة إعدادات معقدة في كود الـ Backend (FastAPI) للسماح بقبول الطلبات من منافذ أو نطاقات محددة، وهو ما قد يفتح ثغرات أمنية أو يسبب أعطالاً عند تغيير بيئة النشر. 
+
+ 
+
+ 
+
+الحل: بناء طبقة Reverse Proxy داخل حاوية Nginx في الـ Frontend (nginx.conf). تم توجيه كافة طلبات الـ API المسار /api/ داخلياً عبر شبكة K8s إلى الخدمة http://game-api:8000. بالتالي يرى المتصفح كل الطلبات كـ (Same-Origin) على نفس النطاق والمنافذ، مما ألغى الحاجة لفتح أطر CORS معقدة في الإنتاج.  
+
+ 
+
+3. حماية الـ Pods من القتل المباشر عند تعثر قاعدة البيانات (Cascading Pod Restarts) 
+
+المشكلة: إذا تم ربط اختبار الجاهزية والنواة برابط واحد يفحص قاعدة البيانات (Redis)، فإن أي انقطاع مؤقت لقاعدة البيانات سيتسبب في توقف فحص الـ livenessProbe لجميع الـ Pods الخاصة بالـ API، مما يدفع K8s لإعادة تشغيل الحاويات باستماتة وبلا فائدة (CrashLoop Spiral). 
+
+ 
+
+الحل: فصل الفحوصات بذكاء هندسي: 
+
+ 
+ 
+
+readinessProbe:
+يفحص /api/ready التي تضمن الاتصال الفعلي بـ Redis. عند فشل Redis، تقوم الـ Probe بنزع الـ Pod من جدول التوجيه (Traffic Endpoint) لمنع استقبال الطلبات دون قتل الحاوية.  
+
+ 
+
+livenessProbe:
+يفحص /api/health التي تضمن فقط أن تطبيق FastAPI يعمل ويجيب على الطلبات HTTP البرمجية.  
+
+ 
+
+4. مشاكل وبطء البناء الداخلي لـ Docker في الـ CI/CD (Docker-in-Docker Overhead) 
+
+المشكلة: استخدام تقنية Docker-in-Docker (DinD) في بيئة GitLab CI يتطلب تشغيل الحاوية بصلاحيات --privileged مرتفعة أمنياً ويؤدي لاستهلاك مفرط للذاكرة وبطء في بناء الصور. 
+
+ 
+
+الحل: تمرير وربط الـ Docker Socket الخاص بالسيرفر المضيف (/var/run/docker.sock) مع الـ Runner. هذا سمح لـ GitLab Runner باستخدام محرك Docker المباشر الخاص بالـ VPS لبناء الصور ورفعها بسرعة وأمان تام بدون صلاحيات زائدة.  
+
+ 
+
+5. عدم استقرار جلب أقران الحجم والتخزين (Race Condition in Volume Provisioning) 
+
+المشكلة: عند إنشاء Persistent Volume Claim (PVC) قبل تحديد العقدة (Node) التي سيعمل عليها التطبيق، قد يتم ربط القرص في مكان غير متاح للـ Pod. 
+
+ 
+
+الحل: ضبط ملف StorageClass بقيمة volumeBindingMode: WaitForFirstConsumer. هذا يفرض على K8s الانتظار حتى يتم جدولة الـ Pod أولاً وتحديد موقع العقدة، ثم إنشاء وربط حجم التخزين محلياً على نفس العقدة.  
+
+ 
+
+ثانياً: الممارسات القوية والمعمارية الاحترافية المطبقة (Best Practices Implemented) 
+
+1. إدارة الهوية والأمان (Security & Identity Management) 
+
+Multi-stage Docker Building:
+تقليل حجم الصور البرمجية وإلغاء أدوات البناء من بيئة التشغيل النهائية لتصغير مساحة الهجوم الأمنية (Attack Surface).  
+
+ 
+
+Non-Root Execution:
+إنشاء حساب مستخدم مخصص غير جذر (appuser / UID 10001) لتشغيل الحاويات لضمان عدم امتلاك التطبيق صلاحيات المضيف عند حدوث اختراق.  
+
+ 
+
+Decoupled Configuration & Secrets:
+فصل البيانات غير الحساسة عبر ConfigMap (REDIS_HOST, REDIS_PORT) والبيانات الحساسة عبر Kubernetes Secret غير المكشوف في الكود (REDIS_PASSWORD).  
+
+ 
+
+GitLab Private Registry Authentication:
+استخدام imagePullSecrets باسم gitlab-registry-secret لسحب الصور الآمنة من الحاوية الخاصة.  
+
+ 
+
+2. كفاءة واستقرار الموارد (Resource Management & High Availability) 
+
+Resource Limits & Requests:
+تحديد سقف استهلاك الذاكرة والمعالج (cpu و memory) لجميع الـ Deployments لحماية الـ Cluster من استنزاف الموارد وضمان توزيع المتطلبات بمرونة (Capacity Planning).  
+
+ 
+
+Stateless Scaling:
+إمكانية زيادة عدد نسخ الـ Backend (replicas: 2) بشكل غير محدود لأن الحالة المخزنة (State) تعتمد بالكامل على Redis بعيداً عن الـ Pods.  
+
+ 
+
+Graceful Lifecycle Management:
+إعطاء فترة سماح وتأخير أولي (initialDelaySeconds, periodSeconds) لفحوصات الصحة لمنع تقييم الـ Pod كفاشل أثناء مرحلة التمهيد (BootStrapping).  
+
+ 
+
+3. أتمتة جودة واختبار الكود (Automated Quality Pipeline) 
+
+Isolated TDD Testing: تشغيل مرحلة اختبار الوحدات (pytest) ضمن الحاوية مع الاعتماد على fakeredis لمحاكاة قاعدة البيانات دون الحاجة لتشغيل Redis حقيقي أثناء الاختبارات.  
+
+ 
+
+Conditional Pipeline Execution:
+ربط تشغيل مرحلة الـ Test بحدث وجود تغييرات على مجلد الـ Backend فقط (backend/**/*) لتوفير الموارد واختصار وقت الـ Pipeline.  
+
+ 
+
+Zero-Downtime Continuous Deployment:
+الاعتماد على kubectl set image متبوعاً بـ kubectl rollout status للتحقق من سلامة النشر البرمجي وضمان عدم إغلاق النسخ القديمة إلا بعد جاهزية النسخ الجديدة تماماً.  
+===============================================================================================================================
+
+ 
