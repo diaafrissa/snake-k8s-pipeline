@@ -55,7 +55,7 @@ build-and-update:
       git config user.email "ci@gitlab.local"
       
       # Setting push permission for the repository using CI-JOB-TOKEN
-      git remote set-url origin https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git
+      git remote set-url origin https://oauth2:${PROJECT_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git
       git fetch origin main
       git checkout main
       
