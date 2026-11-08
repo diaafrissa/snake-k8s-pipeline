@@ -18,7 +18,7 @@ spec:
         - name: gitlab-registry-secret
       containers:
         - name: game-api
-          image: registry.gitlab.com/diaa.frissan.1-group/snake-k8s-pipeline/game-api:latest
+          image: registry.gitlab.com/diaa.frissan.1-group/snake-game/game-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
