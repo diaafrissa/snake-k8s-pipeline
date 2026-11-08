@@ -36,31 +36,32 @@ build-and-update:
     - if: $CI_COMMIT_BRANCH == "main"
   before_script:
     - apk add --no-cache git sed
-  script:
+  script: 
+  -|
     # 1. Login & Build/Push Images
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     
-    - docker build -t "$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$BACKEND_IMAGE:latest" ./backend
-    - docker push "$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA"
-    - docker push "$BACKEND_IMAGE:latest"
+    docker build -t "$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$BACKEND_IMAGE:latest" ./backend
+    docker push "$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA"
+    docker push "$BACKEND_IMAGE:latest"
     
-    - docker build -t "$FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$FRONTEND_IMAGE:latest" ./frontend
-    - docker push "$FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA"
-    - docker push "$FRONTEND_IMAGE:latest"
+    docker build -t "$FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$FRONTEND_IMAGE:latest" ./frontend
+    docker push "$FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA"
+    docker push "$FRONTEND_IMAGE:latest"
 
     # 2. Update Image Tags in Kubernetes Manifests (k8s/ folder)
-    - git config user.name "GitLab CI Bot"
-    - git config user.email "ci@gitlab.local"
+    git config user.name "GitLab CI Bot"
+    git config user.email "ci@gitlab.local"
     
     # setting push permission for repositoy using CI_JOB_TOKEN
-    - git remote set-url origin https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git
-    - git fetch origin main
-    - git checkout main
+    git remote set-url origin https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git
+     git fetch origin main
+    git checkout main
 
     # Automaticlly update image tag in manifest of k8s
-    - sed -i "s|image: $BACKEND_IMAGE:.*|image: $BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA|g" k8s/*.yaml
-    - sed -i "s|image: $FRONTEND_IMAGE:.*|image: $FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA|g" k8s/*.yaml
+    sed -i "s|image: $BACKEND_IMAGE:.*|image: $BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA|g" k8s/*.yaml
+    sed -i "s|image: $FRONTEND_IMAGE:.*|image: $FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA|g" k8s/*.yaml
 
     # 3. Commit and Push changes back to GitLab
-    - git add k8s/
-    - git diff --quiet && git diff --staged --quiet || (git commit -m "CI: update image tags to $CI_COMMIT_SHORT_SHA [skip ci]" && git push origin main)
+    git add k8s/
+    git diff --quiet && git diff --staged --quiet || (git commit -m "CI: update image tags to $CI_COMMIT_SHORT_SHA [skip ci]" && git push origin main)
