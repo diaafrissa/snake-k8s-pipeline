@@ -55,7 +55,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: game-api
-  release: my-prometheus
+  labels:
+    release: my-prometheus
 spec:
   selector:
     app: game-api
