@@ -4,7 +4,7 @@ metadata:
   name: game-api-monitor
   labels:
     # غيّر هذه القيمة لتطابق label الـ serviceMonitorSelector في Prometheus لديك (مثلاً release: prometheus)
-    release: kube-prometheus-stack
+    release: my-prometheus
 spec:
   selector:
     matchLabels:
