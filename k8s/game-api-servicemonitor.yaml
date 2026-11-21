@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: game-api-monitor
+  labels:
+    # غيّر هذه القيمة لتطابق label الـ serviceMonitorSelector في Prometheus لديك (مثلاً release: prometheus)
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      release: my-prometheus
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
