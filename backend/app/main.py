@@ -15,6 +15,7 @@ import redis.asyncio as redis
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from prometheus_fastapi_instrumentator import Instrumentator  #
 
 # ---------------------------------------------------------------------------
 # Configuration (all overridable via environment variables -> maps 1:1 to
@@ -65,6 +66,13 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# تفعيل تصدير مقاييس Prometheus على المسار /metrics[cite: 1]
+Instrumentator().instrument(app).expose(
+    app,
+    endpoint="/metrics",
+    include_in_schema=True,
+)  #[cite: 1]
 
 app.add_middleware(
     CORSMiddleware,
