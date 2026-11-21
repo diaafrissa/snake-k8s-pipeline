@@ -60,5 +60,7 @@ spec:
   selector:
     app: game-api
   ports:
-    - port: 8000
+    - name: http
+      port: 8000
       targetPort: 8000
+      protocol: TCP
