@@ -18,7 +18,7 @@ spec:
         - name: gitlab-registry-secret
       containers:
         - name: frontend
-          image: registry.gitlab.com/diaa.frissan.1-group/snake-game/frontend:9ed85595
+          image: registry.gitlab.com/diaa.frissan.1-group/snake-game/frontend:f63649f9
           imagePullPolicy: Always
           ports:
             - containerPort: 80
